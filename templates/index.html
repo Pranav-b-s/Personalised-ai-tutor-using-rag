@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Virtual Tutor - Realistic Avatar</title>
+<!-- jsDelivr CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      overflow: hidden;
+    }
+
+    #container {
+      display: grid;
+      grid-template-columns: 600px 1fr;
+      height: 100vh;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    #avatar-section {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #avatar-canvas {
+      width: 100%;
+      height: 500px;
+      background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
+    }
+
+    #voice-controls {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    #status {
+      text-align: center;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .voice-btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: white;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .voice-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .voice-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #listen-btn {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    #listen-btn.listening {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      animation: pulse 1.5s infinite;
+    }
+
+    #stop-btn {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    #chat-section {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #chat-header {
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+    }
+
+    #chat-header h1 {
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+
+    #chat-header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .message {
+      max-width: 70%;
+      padding: 12px 18px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.bot {
+      background: #f3f4f6;
+      color: #1f2937;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .welcome {
+      text-align: center;
+      color: #9ca3af;
+      margin-top: 100px;
+      font-size: 18px;
+    }
+
+    #input-area {
+      padding: 20px;
+      background: #f9fafb;
+      border-top: 2px solid #e5e7eb;
+      display: flex;
+      gap: 10px;
+    }
+
+    #text-input {
+      flex: 1;
+      padding: 14px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    #text-input:focus {
+      border-color: #667eea;
+    }
+
+    #send-btn {
+      padding: 14px 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    #send-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    #send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .wave {
+      display: inline-block;
+      animation: wave 0.5s infinite;
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .transcript {
+      text-align: center;
+      color: #6b7280;
+      font-style: italic;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <!-- Avatar Section -->
+    <div id="avatar-section">
+      <div id="avatar-canvas"></div>
+      <div id="voice-controls">
+        <div id="status">🎤 Ready to chat! Click "Start Conversation"</div>
+        <button id="listen-btn" class="voice-btn">🎤 Start Conversation</button>
+        <button id="stop-btn" class="voice-btn" style="display: none;">🔇 Stop Speaking</button>
+        <div id="transcript" class="transcript" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Chat Section -->
+    <div id="chat-section">
+      <div id="chat-header">
+        <h1>🎓 AI Virtual Tutor - Bob</h1>
+        <p>Speak naturally or type your questions</p>
+      </div>
+      <div id="messages">
+        <div class="welcome">
+          <p>👋 <strong>Hi! I'm Bob, your AI tutor.</strong></p>
+          <p style="margin-top: 10px;">Start a conversation by clicking "Start Conversation" button!</p>
+        </div>
+      </div>
+      <div id="input-area">
+        <input type="text" id="text-input" placeholder="Or type your question here...">
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Three.js Avatar Setup
+    let scene, camera, renderer, head, eyes, mouth, neck;
+    let isSpeaking = false;
+    let isListening = false;
+    let mouthOpenAmount = 0;
+    let blinkTimer = 0;
+    let recognition = null;
+    let synthesis = window.speechSynthesis;
+    let currentUtterance = null;
+    let conversationActive = false;
+    let isProcessing = false;
+
+    function initAvatar() {
+      const container = document.getElementById('avatar-canvas');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xe0f2fe);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(0, 1.5, 5);
+      camera.lookAt(0, 1.5, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(5, 10, 5);
+      directionalLight.castShadow = true;
+      scene.add(directionalLight);
+
+      const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+      fillLight.position.set(-5, 5, -5);
+      scene.add(fillLight);
+
+      // Neck
+      const neckGeometry = new THREE.CylinderGeometry(0.25, 0.3, 0.6, 32);
+      const skinMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0xffdbac,
+        shininess: 30
+      });
+      neck = new THREE.Mesh(neckGeometry, skinMaterial);
+      neck.position.y = 0.8;
+      neck.castShadow = true;
+      scene.add(neck);
+
+      // Head
+      const headGeometry = new THREE.SphereGeometry(0.6, 32, 32);
+      head = new THREE.Mesh(headGeometry, skinMaterial);
+      head.position.y = 1.7;
+      head.scale.set(1, 1.15, 0.95);
+      head.castShadow = true;
+      scene.add(head);
+
+      // Hair
+      const hairGeometry = new THREE.SphereGeometry(0.62, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.6);
+      const hairMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x2c1810,
+        shininess: 50
+      });
+      const hair = new THREE.Mesh(hairGeometry, hairMaterial);
+      hair.position.y = 2.1;
+      hair.scale.set(1, 1, 1);
+      scene.add(hair);
+
+      // Eyes
+      eyes = new THREE.Group();
+      
+      const eyeWhiteGeometry = new THREE.SphereGeometry(0.12, 16, 16);
+      const eyeWhiteMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      
+      const leftEyeWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
+      leftEyeWhite.position.set(-0.2, 1.8, 0.5);
+      eyes.add(leftEyeWhite);
+      
+      const rightEyeWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
+      rightEyeWhite.position.set(0.2, 1.8, 0.5);
+      eyes.add(rightEyeWhite);
+
+      // Pupils
+      const pupilGeometry = new THREE.SphereGeometry(0.06, 16, 16);
+      const pupilMaterial = new THREE.MeshPhongMaterial({ color: 0x1a1a1a });
+      
+      const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+      leftPupil.position.set(-0.2, 1.8, 0.61);
+      eyes.add(leftPupil);
+      
+      const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+      rightPupil.position.set(0.2, 1.8, 0.61);
+      eyes.add(rightPupil);
+
+      // Eye highlights
+      const highlightGeometry = new THREE.SphereGeometry(0.03, 8, 8);
+      const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      
+      const leftHighlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+      leftHighlight.position.set(-0.18, 1.82, 0.65);
+      eyes.add(leftHighlight);
+      
+      const rightHighlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+      rightHighlight.position.set(0.22, 1.82, 0.65);
+      eyes.add(rightHighlight);
+
+      scene.add(eyes);
+
+      // Nose
+      const noseGeometry = new THREE.ConeGeometry(0.08, 0.2, 16);
+      const nose = new THREE.Mesh(noseGeometry, skinMaterial);
+      nose.position.set(0, 1.6, 0.55);
+      nose.rotation.x = Math.PI;
+      scene.add(nose);
+
+      // Mouth
+      const mouthGeometry = new THREE.TorusGeometry(0.15, 0.03, 16, 32, Math.PI);
+      const mouthMaterial = new THREE.MeshPhongMaterial({ color: 0xd4686d });
+      mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
+      mouth.position.set(0, 1.4, 0.52);
+      mouth.rotation.x = Math.PI;
+      scene.add(mouth);
+
+      // Eyebrows
+      const eyebrowGeometry = new THREE.CapsuleGeometry(0.03, 0.15, 4, 8);
+      const eyebrowMaterial = new THREE.MeshPhongMaterial({ color: 0x2c1810 });
+      
+      const leftEyebrow = new THREE.Mesh(eyebrowGeometry, eyebrowMaterial);
+      leftEyebrow.position.set(-0.2, 1.95, 0.5);
+      leftEyebrow.rotation.z = -0.2;
+      scene.add(leftEyebrow);
+      
+      const rightEyebrow = new THREE.Mesh(eyebrowGeometry, eyebrowMaterial);
+      rightEyebrow.position.set(0.2, 1.95, 0.5);
+      rightEyebrow.rotation.z = 0.2;
+      scene.add(rightEyebrow);
+
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Mouth animation when speaking
+      if (isSpeaking) {
+        mouthOpenAmount = Math.sin(Date.now() * 0.02) * 0.3 + 0.3;
+        mouth.scale.y = 1 + mouthOpenAmount;
+        mouth.position.y = 1.4 - mouthOpenAmount * 0.1;
+      } else {
+        mouthOpenAmount *= 0.9;
+        mouth.scale.y = 1;
+        mouth.position.y = 1.4;
+      }
+
+      // Subtle breathing animation
+      const breathe = Math.sin(Date.now() * 0.001) * 0.02;
+      head.position.y = 1.7 + breathe;
+      neck.scale.y = 1 + breathe * 0.5;
+
+      // Eye blink
+      blinkTimer++;
+      if (blinkTimer > 180) {
+        const blinkPhase = (blinkTimer - 180) / 10;
+        if (blinkPhase < 1) {
+          eyes.scale.y = 1 - blinkPhase;
+        } else {
+          eyes.scale.y = blinkPhase - 1;
+        }
+        if (blinkTimer > 200) {
+          blinkTimer = 0;
+          eyes.scale.y = 1;
+        }
+      }
+
+      // Listening animation
+      if (isListening) {
+        head.rotation.y = Math.sin(Date.now() * 0.003) * 0.1;
+      } else {
+        head.rotation.y *= 0.95;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Speech Recognition Setup
+    function initSpeechRecognition() {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+          isListening = true;
+          updateStatus('👂 Listening to you...');
+        };
+
+        recognition.onresult = async (event) => {
+          const transcript = Array.from(event.results)
+            .map(result => result[0].transcript)
+            .join('');
+
+          document.getElementById('transcript').style.display = 'block';
+          document.getElementById('transcript').textContent = `You: "${transcript}"`;
+
+          // Check if this is a final result
+          const lastResult = event.results[event.results.length - 1];
+          if (lastResult.isFinal) {
+            // User finished speaking, process the question
+            await processQuestion(transcript);
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          if (conversationActive && event.error !== 'no-speech') {
+            setTimeout(() => {
+              if (conversationActive && !isProcessing) {
+                recognition.start();
+              }
+            }, 1000);
+          }
+        };
+
+        recognition.onend = () => {
+          isListening = false;
+          if (conversationActive && !isProcessing) {
+            // Restart listening for continuous conversation
+            setTimeout(() => {
+              if (conversationActive && !isSpeaking) {
+                recognition.start();
+              }
+            }, 500);
+          }
+        };
+      } else {
+        alert('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
+      }
+    }
+
+    async function processQuestion(questionText) {
+      if (!questionText.trim() || isProcessing) return;
+
+      isProcessing = true;
+      updateStatus('🤔 Bob is thinking...');
+      
+      // Stop listening while processing
+      if (recognition) {
+        recognition.stop();
+      }
+
+      // Add user message
+      addMessage(questionText, 'user');
+      document.getElementById('transcript').style.display = 'none';
+
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/ask', {
+          question: questionText
+        }, {
+          timeout: 60000,
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const answer = response.data.answer || "I didn't get a response.";
+        addMessage(answer, 'bot');
+        
+        // Speak the answer
+        await speakText(answer);
+
+      } catch (error) {
+        console.error('Error:', error);
+        const errorMsg = error.response?.data?.error || 'Unable to connect to server. Make sure Flask is running on port 5000.';
+        addMessage(`❌ Error: ${errorMsg}`, 'bot');
+      } finally {
+        isProcessing = false;
+        
+        // Resume listening after response
+        if (conversationActive && recognition) {
+          setTimeout(() => {
+            if (conversationActive && !isSpeaking) {
+              updateStatus('👂 Ready for your next question...');
+              recognition.start();
+            }
+          }, 1000);
+        }
+      }
+    }
+
+    function speakText(text) {
+      return new Promise((resolve) => {
+        // Cancel any ongoing speech
+        synthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.1;
+        utterance.volume = 1;
+
+        utterance.onstart = () => {
+          isSpeaking = true;
+          updateStatus('🗣️ Bob is speaking...');
+          document.getElementById('stop-btn').style.display = 'block';
+        };
+
+        utterance.onend = () => {
+          isSpeaking = false;
+          document.getElementById('stop-btn').style.display = 'none';
+          updateStatus('👂 Listening to you...');
+          resolve();
+        };
+
+        utterance.onerror = () => {
+          isSpeaking = false;
+          document.getElementById('stop-btn').style.display = 'none';
+          resolve();
+        };
+
+        currentUtterance = utterance;
+        synthesis.speak(utterance);
+      });
+    }
+
+    function addMessage(text, sender) {
+      const messagesDiv = document.getElementById('messages');
+      const welcome = messagesDiv.querySelector('.welcome');
+      if (welcome) welcome.remove();
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender}`;
+      messageDiv.textContent = text;
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function updateStatus(text) {
+      document.getElementById('status').innerHTML = text;
+    }
+
+    // Event Listeners
+    document.getElementById('listen-btn').addEventListener('click', () => {
+      if (!conversationActive) {
+        conversationActive = true;
+        document.getElementById('listen-btn').classList.add('listening');
+        document.getElementById('listen-btn').textContent = '🔴 Conversation Active';
+        if (recognition) recognition.start();
+      } else {
+        conversationActive = false;
+        document.getElementById('listen-btn').classList.remove('listening');
+        document.getElementById('listen-btn').textContent = '🎤 Start Conversation';
+        if (recognition) recognition.stop();
+        synthesis.cancel();
+        isSpeaking = false;
+        isListening = false;
+        updateStatus('🎤 Ready to chat! Click "Start Conversation"');
+        document.getElementById('stop-btn').style.display = 'none';
+        document.getElementById('transcript').style.display = 'none';
+      }
+    });
+
+    document.getElementById('stop-btn').addEventListener('click', () => {
+      synthesis.cancel();
+      isSpeaking = false;
+      document.getElementById('stop-btn').style.display = 'none';
+      if (conversationActive && recognition) {
+        updateStatus('👂 Listening to you...');
+        recognition.start();
+      }
+    });
+
+    document.getElementById('send-btn').addEventListener('click', async () => {
+      const input = document.getElementById('text-input');
+      const question = input.value.trim();
+      if (question) {
+        input.value = '';
+        
+        // Pause conversation mode temporarily
+        const wasActive = conversationActive;
+        if (conversationActive) {
+          conversationActive = false;
+          if (recognition) recognition.stop();
+        }
+        
+        await processQuestion(question);
+        
+        // Resume if it was active
+        if (wasActive) {
+          conversationActive = true;
+          setTimeout(() => {
+            if (conversationActive && recognition && !isSpeaking) {
+              recognition.start();
+            }
+          }, 1000);
+        }
+      }
+    });
+
+    document.getElementById('text-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('send-btn').click();
+      }
+    });
+
+    // Initialize
+    window.addEventListener('load', () => {
+      initAvatar();
+      initSpeechRecognition();
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      const container = document.getElementById('avatar-canvas');
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+  </script>
+</body>
+</html>

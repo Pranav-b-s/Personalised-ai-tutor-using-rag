@@ -1,0 +1,650 @@
+{
+  "topics_discussed": {
+    "name": 5,
+    "pranav": 1,
+    "whats": 8,
+    "python": 7,
+    "syntax": 1,
+    "hello": 5,
+    "last": 1,
+    "conversation": 1,
+    "about": 4,
+    "explain": 1,
+    "sentence": 1,
+    "languages": 1,
+    "discussed": 1,
+    "names": 2,
+    "just": 3,
+    "tell": 3,
+    "language": 2,
+    "only": 1,
+    "design": 1,
+    "class": 1,
+    "implements": 1,
+    "stack": 1,
+    "java": 1,
+    "computer": 1,
+    "science": 1,
+    "food": 1,
+    "provide": 1,
+    "code": 1,
+    "palindrome": 1,
+    "checking": 1,
+    "classes": 1,
+    "understanding": 1,
+    "shit": 1,
+    "gemini": 4,
+    "like": 1,
+    "women": 1,
+    "system": 3,
+    "tutor": 2,
+    "tells": 2,
+    "jokes": 1,
+    "joke": 1,
+    "know": 1,
+    "coding": 1,
+    "history": 1,
+    "sing": 1,
+    "dream": 1,
+    "your": 1,
+    "eyes": 1,
+    "song": 1,
+    "navadeep": 1,
+    "worst": 1,
+    "learn": 1,
+    "chat": 2,
+    "hitler": 1,
+    "abuot": 1,
+    "mahathma": 1,
+    "gandhi": 1,
+    "teach": 1
+  },
+  "difficulty_preferences": {},
+  "question_types": {
+    "statement": 45,
+    "general_question": 2,
+    "concept_explanation": 2
+  },
+  "learning_patterns": [],
+  "total_interactions": 49,
+  "first_interaction": "2025-10-16T12:35:26.722041",
+  "last_interaction": "2025-10-21T15:14:23.294369",
+  "learning_style_scores": {
+    "auditory": 4.0,
+    "kinesthetic": 3.0
+  },
+  "personality_traits": {
+    "formality_preference": 5,
+    "humor_receptiveness": 5,
+    "detail_orientation": 5,
+    "encouragement_need": 5,
+    "patience_level": 5
+  },
+  "knowledge_mastery": {
+    "hello": {
+      "exposure_count": 2,
+      "question_types": [
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        0,
+        0
+      ],
+      "first_seen": "2025-10-17T07:24:45.809355",
+      "last_seen": "2025-10-17T10:00:10.251966",
+      "mastery_level": 2.6
+    },
+    "whats": {
+      "exposure_count": 2,
+      "question_types": [
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        0,
+        0
+      ],
+      "first_seen": "2025-10-17T07:42:28.232606",
+      "last_seen": "2025-10-17T14:45:03.264228",
+      "mastery_level": 2.6
+    },
+    "java": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T07:42:28.232606",
+      "last_seen": "2025-10-17T07:42:28.232606",
+      "mastery_level": 1.8
+    },
+    "computer": {
+      "exposure_count": 1,
+      "question_types": [
+        "concept_explanation"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T10:44:08.329958",
+      "last_seen": "2025-10-17T10:44:08.329958",
+      "mastery_level": 1.8
+    },
+    "science": {
+      "exposure_count": 1,
+      "question_types": [
+        "concept_explanation"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T10:44:08.329958",
+      "last_seen": "2025-10-17T10:44:08.329958",
+      "mastery_level": 1.8
+    },
+    "food": {
+      "exposure_count": 1,
+      "question_types": [
+        "general_question"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T10:58:13.370481",
+      "last_seen": "2025-10-17T10:58:13.370481",
+      "mastery_level": 1.8
+    },
+    "provide": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T10:59:02.768938",
+      "last_seen": "2025-10-17T10:59:02.768938",
+      "mastery_level": 1.8
+    },
+    "code": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T10:59:02.768938",
+      "last_seen": "2025-10-17T10:59:02.768938",
+      "mastery_level": 1.8
+    },
+    "palindrome": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T10:59:02.768938",
+      "last_seen": "2025-10-17T10:59:02.768938",
+      "mastery_level": 1.8
+    },
+    "checking": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T10:59:02.768938",
+      "last_seen": "2025-10-17T10:59:02.768938",
+      "mastery_level": 1.8
+    },
+    "python": {
+      "exposure_count": 3,
+      "question_types": [
+        "statement",
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        0,
+        0,
+        0
+      ],
+      "first_seen": "2025-10-17T14:45:03.264228",
+      "last_seen": "2025-10-21T15:14:11.876873",
+      "mastery_level": 3.4
+    },
+    "tell": {
+      "exposure_count": 2,
+      "question_types": [
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        0,
+        1
+      ],
+      "first_seen": "2025-10-17T14:51:33.127427",
+      "last_seen": "2025-10-21T15:12:45.559643",
+      "mastery_level": 2.6
+    },
+    "about": {
+      "exposure_count": 3,
+      "question_types": [
+        "statement",
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        0,
+        0,
+        0
+      ],
+      "first_seen": "2025-10-17T14:51:33.127427",
+      "last_seen": "2025-10-17T15:03:33.992349",
+      "mastery_level": 3.4
+    },
+    "classes": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T14:51:33.127427",
+      "last_seen": "2025-10-17T14:51:33.127427",
+      "mastery_level": 1.8
+    },
+    "understanding": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        1
+      ],
+      "first_seen": "2025-10-17T14:57:29.547530",
+      "last_seen": "2025-10-17T14:57:29.547530",
+      "mastery_level": 1.8
+    },
+    "shit": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        1
+      ],
+      "first_seen": "2025-10-17T14:57:29.547530",
+      "last_seen": "2025-10-17T14:57:29.547530",
+      "mastery_level": 1.8
+    },
+    "gemini": {
+      "exposure_count": 4,
+      "question_types": [
+        "statement",
+        "statement",
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        0,
+        1,
+        1,
+        1
+      ],
+      "first_seen": "2025-10-17T14:59:02.348018",
+      "last_seen": "2025-10-17T14:59:24.698729",
+      "mastery_level": 7.2
+    },
+    "like": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:01:01.973290",
+      "last_seen": "2025-10-17T15:01:01.973290",
+      "mastery_level": 1.8
+    },
+    "women": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:01:01.973290",
+      "last_seen": "2025-10-17T15:01:01.973290",
+      "mastery_level": 1.8
+    },
+    "system": {
+      "exposure_count": 3,
+      "question_types": [
+        "statement",
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        1,
+        1,
+        0
+      ],
+      "first_seen": "2025-10-17T15:01:59.850176",
+      "last_seen": "2025-10-21T15:04:22.043637",
+      "mastery_level": 3.4
+    },
+    "tutor": {
+      "exposure_count": 2,
+      "question_types": [
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        1,
+        1
+      ],
+      "first_seen": "2025-10-17T15:01:59.850176",
+      "last_seen": "2025-10-17T15:02:17.428926",
+      "mastery_level": 2.6
+    },
+    "just": {
+      "exposure_count": 2,
+      "question_types": [
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        1,
+        1
+      ],
+      "first_seen": "2025-10-17T15:01:59.850176",
+      "last_seen": "2025-10-17T15:02:17.428926",
+      "mastery_level": 2.6
+    },
+    "tells": {
+      "exposure_count": 2,
+      "question_types": [
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        1,
+        1
+      ],
+      "first_seen": "2025-10-17T15:01:59.850176",
+      "last_seen": "2025-10-17T15:02:17.428926",
+      "mastery_level": 2.6
+    },
+    "jokes": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        1
+      ],
+      "first_seen": "2025-10-17T15:01:59.850176",
+      "last_seen": "2025-10-17T15:01:59.850176",
+      "mastery_level": 1.8
+    },
+    "joke": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        1
+      ],
+      "first_seen": "2025-10-17T15:02:17.428926",
+      "last_seen": "2025-10-17T15:02:17.428926",
+      "mastery_level": 1.8
+    },
+    "know": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:02:48.092210",
+      "last_seen": "2025-10-17T15:02:48.092210",
+      "mastery_level": 1.8
+    },
+    "coding": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:03:33.992349",
+      "last_seen": "2025-10-17T15:03:33.992349",
+      "mastery_level": 1.8
+    },
+    "history": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:03:33.992349",
+      "last_seen": "2025-10-17T15:03:33.992349",
+      "mastery_level": 1.8
+    },
+    "sing": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:05:54.282934",
+      "last_seen": "2025-10-17T15:05:54.282934",
+      "mastery_level": 1.8
+    },
+    "dream": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:05:54.282934",
+      "last_seen": "2025-10-17T15:05:54.282934",
+      "mastery_level": 1.8
+    },
+    "your": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:05:54.282934",
+      "last_seen": "2025-10-17T15:05:54.282934",
+      "mastery_level": 1.8
+    },
+    "eyes": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:05:54.282934",
+      "last_seen": "2025-10-17T15:05:54.282934",
+      "mastery_level": 1.8
+    },
+    "song": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-17T15:05:54.282934",
+      "last_seen": "2025-10-17T15:05:54.282934",
+      "mastery_level": 1.8
+    },
+    "name": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-21T15:04:22.043637",
+      "last_seen": "2025-10-21T15:04:22.043637",
+      "mastery_level": 1.8
+    },
+    "navadeep": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-21T15:04:22.043637",
+      "last_seen": "2025-10-21T15:04:22.043637",
+      "mastery_level": 1.8
+    },
+    "worst": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-21T15:04:59.876033",
+      "last_seen": "2025-10-21T15:04:59.876033",
+      "mastery_level": 1.8
+    },
+    "language": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-21T15:04:59.876033",
+      "last_seen": "2025-10-21T15:04:59.876033",
+      "mastery_level": 1.8
+    },
+    "learn": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-21T15:04:59.876033",
+      "last_seen": "2025-10-21T15:04:59.876033",
+      "mastery_level": 1.8
+    },
+    "chat": {
+      "exposure_count": 2,
+      "question_types": [
+        "statement",
+        "statement"
+      ],
+      "complexity_progression": [
+        0,
+        0
+      ],
+      "first_seen": "2025-10-21T15:10:09.429008",
+      "last_seen": "2025-10-21T15:10:09.429008",
+      "mastery_level": 2.6
+    },
+    "hitler": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-21T15:12:19.077495",
+      "last_seen": "2025-10-21T15:12:19.077495",
+      "mastery_level": 1.8
+    },
+    "abuot": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        1
+      ],
+      "first_seen": "2025-10-21T15:12:45.559643",
+      "last_seen": "2025-10-21T15:12:45.559643",
+      "mastery_level": 1.8
+    },
+    "mahathma": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        1
+      ],
+      "first_seen": "2025-10-21T15:12:45.559643",
+      "last_seen": "2025-10-21T15:12:45.559643",
+      "mastery_level": 1.8
+    },
+    "gandhi": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        1
+      ],
+      "first_seen": "2025-10-21T15:12:45.559643",
+      "last_seen": "2025-10-21T15:12:45.559643",
+      "mastery_level": 1.8
+    },
+    "teach": {
+      "exposure_count": 1,
+      "question_types": [
+        "statement"
+      ],
+      "complexity_progression": [
+        0
+      ],
+      "first_seen": "2025-10-21T15:14:11.876873",
+      "last_seen": "2025-10-21T15:14:11.876873",
+      "mastery_level": 1.8
+    }
+  },
+  "engagement_metrics": {
+    "engagement_level": "passive",
+    "interaction_frequency": "casual",
+    "follow_up_rate": 0.0
+  }
+}
