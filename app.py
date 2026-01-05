@@ -744,7 +744,7 @@ def clean_text(text):
 # --- OpenRouter setup ---
 OPENROUTER_API_KEY = os.getenv(
     "OPENROUTER_API_KEY", 
-    "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"
+    "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"
 )
 MODEL = "deepseek/deepseek-r1-0528:free"
 API_URL = "https://openrouter.ai/api/v1/chat/completions"

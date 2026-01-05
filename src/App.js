@@ -254,19 +254,27 @@ function App() {
   };
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    stopSpeaking();
-    stopListening();
-    if (tab === "profile") {
-      fetchProfile();
-    } else if (tab === "history") {
-      fetchInteractions();
-    } else if (tab === "roadmap") {
-      navigate("/Roadmap");
-    }
+  stopSpeaking();
+  stopListening();
 
-  };
+  setActiveTab(tab);
 
+  if (tab === "profile") {
+    fetchProfile();
+    navigate("/"); // ✅ GO BACK TO HOME
+  } 
+  else if (tab === "history") {
+    fetchInteractions();
+    navigate("/"); // ✅ GO BACK TO HOME
+  } 
+  else if (tab === "roadmap") {
+    navigate("/roadmap"); // ✅ lowercase + roadmap route
+  } 
+  else {
+    // chat
+    navigate("/"); // ✅ GO BACK TO HOME
+  }
+};
   // 3D Avatar Head Component
   const AvatarHead = ({ expression, mouthOpen, isListening, isSpeaking }) => {
     const headRef = useRef();
