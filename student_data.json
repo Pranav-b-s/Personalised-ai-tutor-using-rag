@@ -64,14 +64,14 @@
   },
   "difficulty_preferences": {},
   "question_types": {
-    "statement": 57,
+    "statement": 58,
     "general_question": 2,
     "concept_explanation": 2
   },
   "learning_patterns": [],
-  "total_interactions": 61,
+  "total_interactions": 62,
   "first_interaction": "2025-10-16T12:35:26.722041",
-  "last_interaction": "2026-01-05T14:19:07.336253",
+  "last_interaction": "2026-01-05T20:25:55.895823",
   "learning_style_scores": {
     "auditory": 4.0,
     "kinesthetic": 3.0
@@ -710,8 +710,8 @@
     }
   },
   "engagement_metrics": {
-    "engagement_level": "passive",
-    "interaction_frequency": "active",
+    "engagement_level": "warming_up",
+    "interaction_frequency": "new_student",
     "follow_up_rate": 0.0
   }
 }
