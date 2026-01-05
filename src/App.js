@@ -4,6 +4,9 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import "./avatar.css";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import Roadmap from "./Roadmap";
+
 
 function App() {
   const [question, setQuestion] = useState("");
@@ -13,6 +16,8 @@ function App() {
   const [studentProfile, setStudentProfile] = useState(null);
   const [interactions, setInteractions] = useState([]);
   const chatBoxRef = useRef(null);
+  const navigate = useNavigate();
+
 
   // Voice and Avatar states
   const [isListening, setIsListening] = useState(false);
@@ -257,8 +262,9 @@ function App() {
     } else if (tab === "history") {
       fetchInteractions();
     } else if (tab === "roadmap") {
-      window.location.href = "/roadmap.html";
+      navigate("/Roadmap");
     }
+
   };
 
   // 3D Avatar Head Component
@@ -582,194 +588,157 @@ function App() {
       </nav>
 
       <div className="main-content">
-        {activeTab === "chat" && (
-          <div className="chat-layout">
-            <aside className="avatar-sidebar">
-              <RealisticAvatar />
-
-              <div className="voice-controls">
-                <button
-                  onClick={isListening ? stopListening : startListening}
-                  className={`control-button ${isListening ? "listening" : ""}`}
-                  disabled={loading || isSpeaking}
-                >
-                  {isListening ? "🎤 Listening..." : "🎤 Press to Speak"}
-                </button>
-
-                {isSpeaking && (
-                  <button
-                    onClick={stopSpeaking}
-                    className="control-button stop-speaking"
-                  >
-                    ⏹️ Stop Speaking
-                  </button>
-                )}
-              </div>
-
-              <div className="status-display">
-                {loading && "🤔 Bob is thinking..."}
-                {isSpeaking && "🗣️ Bob is speaking..."}
-                {isListening && "👂 Listening to you..."}
-                {!loading && !isSpeaking && !isListening && "💬 Ready to help!"}
-              </div>
-            </aside>
-
-            <div className="chat-area">
-              <div className="chat-messages" ref={chatBoxRef}>
-                {messages.length === 0 && (
-                  <div className="empty-chat">
-                    <p>👋 Hi! I'm Bob, your AI tutor.</p>
-                    <p>Click the microphone and start speaking!</p>
-                  </div>
-                )}
-
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`message-wrapper ${msg.sender}`}
-                  >
-                    <div className={`message ${msg.sender}`}>
-                      {msg.sender === "bot" && (
-                        <button
-                          onClick={() => speakText(msg.text)}
-                          className="speak-button"
-                          title="Hear this response"
-                        >
-                          🔊
-                        </button>
-                      )}
-                      {msg.text}
-                    </div>
-                  </div>
-                ))}
-
-                {loading && (
-                  <div className="loading-indicator">
-                    <span className="loading-dot">●</span>
-                    <span className="loading-dot">●</span>
-                    <span className="loading-dot">●</span>
-                  </div>
-                )}
-              </div>
-
-              <form onSubmit={sendQuestion} className="chat-input-form">
-                <input
-                  type="text"
-                  placeholder="Or type your question..."
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  className="chat-input"
-                  disabled={loading}
-                />
-                <button
-                  type="submit"
-                  className="send-button"
-                  disabled={loading}
-                >
-                  {loading ? "⏳" : "Send"}
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "profile" && (
-          <div className="tab-content">
-            {!studentProfile ? (
-              <div className="loading-state">Loading profile...</div>
-            ) : studentProfile.error ? (
-              <div className="error-state">❌ {studentProfile.error}</div>
-            ) : (
+        <Routes>
+          {/* HOME / TABS */}
+          <Route
+            path="/"
+            element={
               <>
-                <h3 className="section-title">📊 Your Learning Profile</h3>
+                {/* CHAT TAB */}
+                {activeTab === "chat" && (
+                  <div className="chat-layout">
+                    <aside className="avatar-sidebar">
+                      <RealisticAvatar />
 
-                <div className="stat-card">
-                  <div className="stat-label">Total Interactions</div>
-                  <div className="stat-value">{studentProfile.total_interactions || 0}</div>
-                </div>
+                      <div className="voice-controls">
+                        <button
+                          onClick={isListening ? stopListening : startListening}
+                          className={`control-button ${isListening ? "listening" : ""}`}
+                          disabled={loading || isSpeaking}
+                        >
+                          {isListening ? "🎤 Listening..." : "🎤 Press to Speak"}
+                        </button>
 
-                <div className="stat-card">
-                  <div className="stat-label">Learning Since</div>
-                  <div className="stat-value">
-                    {studentProfile.first_interaction
-                      ? new Date(studentProfile.first_interaction).toLocaleDateString()
-                      : "N/A"}
-                  </div>
-                </div>
+                        {isSpeaking && (
+                          <button
+                            onClick={stopSpeaking}
+                            className="control-button stop-speaking"
+                          >
+                            ⏹️ Stop Speaking
+                          </button>
+                        )}
+                      </div>
 
-                <h4 className="subsection-title">📚 Topics You've Explored</h4>
-                <div className="topics-list">
-                  {studentProfile.topics_discussed &&
-                  Object.keys(studentProfile.topics_discussed).length > 0 ? (
-                    Object.entries(studentProfile.topics_discussed)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([type, count]) => (
-                        <div key={type} className="topic-item">
-                          <span className="topic-name">
-                            {type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </span>
-                          <div className="progress-bar">
-                            <div
-                              className="progress-fill"
-                              style={{
-                                width: `${(count / studentProfile.total_interactions) * 100}%`,
-                              }}
-                            />
+                      <div className="status-display">
+                        {loading && "🤔 Bob is thinking..."}
+                        {isSpeaking && "🗣️ Bob is speaking..."}
+                        {isListening && "👂 Listening to you..."}
+                        {!loading && !isSpeaking && !isListening && "💬 Ready to help!"}
+                      </div>
+                    </aside>
+
+                    <div className="chat-area">
+                      <div className="chat-messages" ref={chatBoxRef}>
+                        {messages.length === 0 && (
+                          <div className="empty-chat">
+                            <p>👋 Hi! I'm Bob, your AI tutor.</p>
+                            <p>Click the microphone and start speaking!</p>
                           </div>
-                          <span className="topic-count">{count}</span>
+                        )}
+
+                        {messages.map((msg, i) => (
+                          <div key={i} className={`message-wrapper ${msg.sender}`}>
+                            <div className={`message ${msg.sender}`}>
+                              {msg.sender === "bot" && (
+                                <button
+                                  onClick={() => speakText(msg.text)}
+                                  className="speak-button"
+                                >
+                                  🔊
+                                </button>
+                              )}
+                              {msg.text}
+                            </div>
+                          </div>
+                        ))}
+
+                        {loading && (
+                          <div className="loading-indicator">
+                            <span className="loading-dot">●</span>
+                            <span className="loading-dot">●</span>
+                            <span className="loading-dot">●</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <form onSubmit={sendQuestion} className="chat-input-form">
+                        <input
+                          type="text"
+                          placeholder="Or type your question..."
+                          value={question}
+                          onChange={(e) => setQuestion(e.target.value)}
+                          className="chat-input"
+                          disabled={loading}
+                        />
+                        <button type="submit" className="send-button" disabled={loading}>
+                          {loading ? "⏳" : "Send"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* PROFILE TAB */}
+                {activeTab === "profile" && (
+                  <div className="tab-content">
+                    {!studentProfile ? (
+                      <div className="loading-state">Loading profile...</div>
+                    ) : studentProfile.error ? (
+                      <div className="error-state">❌ {studentProfile.error}</div>
+                    ) : (
+                      <>
+                        <h3 className="section-title">📊 Your Learning Profile</h3>
+
+                        <div className="stat-card">
+                          <div className="stat-label">Total Interactions</div>
+                          <div className="stat-value">
+                            {studentProfile.total_interactions || 0}
+                          </div>
                         </div>
-                      ))
-                  ) : (
-                    <p className="empty-state">No data yet.</p>
-                  )}
-                </div>
 
-                <button onClick={fetchProfile} className="refresh-button">
-                  🔄 Refresh Profile
-                </button>
-              </>
-            )}
-          </div>
-        )}
+                        <button onClick={fetchProfile} className="refresh-button">
+                          🔄 Refresh Profile
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
 
-        {activeTab === "history" && (
-          <div className="tab-content">
-            <h3 className="section-title">📚 Your Learning History</h3>
-            <p className="section-subtitle">Recent conversations (showing last 20)</p>
+                {/* HISTORY TAB */}
+                {activeTab === "history" && (
+                  <div className="tab-content">
+                    <h3 className="section-title">📚 Your Learning History</h3>
 
-            {interactions.length === 0 ? (
-              <div className="empty-state">No interactions yet. Start chatting with Bob!</div>
-            ) : (
-              <div className="history-list">
-                {interactions.slice().reverse().map((interaction, idx) => (
-                  <div key={idx} className="history-item">
-                    <div className="history-timestamp">
-                      🕒 {new Date(interaction.timestamp).toLocaleString()}
-                    </div>
-                    <div className="history-question">
-                      <strong>Q:</strong> {interaction.question}
-                    </div>
-                    <div className="history-answer">
-                      <strong>A:</strong> {interaction.answer}
-                    </div>
-                    {interaction.topics && interaction.topics.length > 0 && (
-                      <div className="history-topics">
-                        {interaction.topics.map((topic, i) => (
-                          <span key={i} className="topic-tag">{topic}</span>
+                    {interactions.length === 0 ? (
+                      <div className="empty-state">
+                        No interactions yet. Start chatting!
+                      </div>
+                    ) : (
+                      <div className="history-list">
+                        {interactions.map((item, i) => (
+                          <div key={i} className="history-item">
+                            <strong>Q:</strong> {item.question}
+                            <br />
+                            <strong>A:</strong> {item.answer}
+                          </div>
                         ))}
                       </div>
                     )}
-                  </div>
-                ))}
-              </div>
-            )}
 
-            <button onClick={fetchInteractions} className="refresh-button">
-              🔄 Refresh History
-            </button>
-          </div>
-        )}
+                    <button onClick={fetchInteractions} className="refresh-button">
+                      🔄 Refresh History
+                    </button>
+                  </div>
+                )}
+              </>
+            }
+          />
+
+          {/* ROADMAP PAGE */}
+          <Route path="/roadmap" element={<Roadmap />} />
+        </Routes>
       </div>
+
 
       <footer className="footer">Powered by AI & React Three Fiber</footer>
     </div>

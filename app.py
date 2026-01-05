@@ -744,9 +744,9 @@ def clean_text(text):
 # --- OpenRouter setup ---
 OPENROUTER_API_KEY = os.getenv(
     "OPENROUTER_API_KEY", 
-    "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"
+    "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"
 )
-MODEL = "allenai/olmo-3.1-32b-think:free"
+MODEL = "deepseek/deepseek-r1-0528:free"
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 base_chatbot_profile = """You are Bob, an adaptive AI tutor with real-time learning analytics.
