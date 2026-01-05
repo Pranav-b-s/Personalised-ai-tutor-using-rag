@@ -744,9 +744,9 @@ def clean_text(text):
 # --- OpenRouter setup ---
 OPENROUTER_API_KEY = os.getenv(
     "OPENROUTER_API_KEY", 
-    "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"
+    "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"
 )
-MODEL = "anthropic/claude-3.5-sonnet"
+MODEL = "allenai/olmo-3.1-32b-think:free"
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 base_chatbot_profile = """You are Bob, an adaptive AI tutor with real-time learning analytics.
@@ -775,11 +775,80 @@ def ask_openrouter(messages):
         print(f"API Error: {e}")
         raise
 
+
+def build_learning_roadmap(goal, time_per_day, learning_style, analytics):
+    """
+    Generate adaptive learning roadmap
+    """
+    time_per_day = float(time_per_day)
+
+    # Duration adapts to time commitment
+    weeks = 2 if time_per_day >= 3 else 3 if time_per_day >= 1.5 else 4
+
+    weak_topics = analytics["knowledge"]["weak_topics"]
+    strong_topics = analytics["knowledge"]["strong_topics"]
+
+    weekly_plan = []
+
+    for i in range(weeks):
+        if i == 0:
+            weekly_plan.append(
+                f"Week 1: Fundamentals of {goal} "
+                f"(focus on basics and weak areas: {', '.join(weak_topics) if weak_topics else 'core concepts'})"
+            )
+        elif i == weeks - 1:
+            weekly_plan.append(
+                f"Week {i+1}: Mini project + revision + self-assessment"
+            )
+        else:
+            weekly_plan.append(
+                f"Week {i+1}: Intermediate concepts of {goal} "
+                f"(build on strengths: {', '.join(strong_topics) if strong_topics else 'general practice'})"
+            )
+
+    # Study pattern adapts to learning style
+    if learning_style == "visual":
+        study_pattern = "Watch videos → draw diagrams → summarize visually"
+    elif learning_style == "kinesthetic":
+        study_pattern = "Learn concept → practice → build small exercises"
+    elif learning_style == "auditory":
+        study_pattern = "Listen → explain aloud → revise"
+    else:
+        study_pattern = "Read → take notes → revise next day"
+
+    resources = [
+        {
+            "title": f"{goal} Full Course",
+            "link": f"https://www.youtube.com/results?search_query={goal}+full+course"
+        },
+        {
+            "title": f"{goal} Practice",
+            "link": f"https://www.google.com/search?q={goal}+practice+problems"
+        },
+        {
+            "title": f"{goal} Documentation",
+            "link": f"https://www.google.com/search?q={goal}+documentation"
+        }
+    ]
+
+    return {
+        "goal": goal,
+        "weeks": weeks,
+        "time_per_day": time_per_day,
+        "learning_style": learning_style,
+        "weekly_plan": weekly_plan,
+        "study_pattern": study_pattern,
+        "resources": resources,
+        "generated_at": datetime.now().isoformat()
+    }
+
+
+
 # --- Routes ---
 @app.route('/ask', methods=['POST'])
 def ask():
     """Handle chatbot questions with real-time adaptive learning"""
-    data = request.json
+    data = request.get_json(force=True, silent=True)
     user_message = data.get("question", "").strip()
     
     if not user_message:
@@ -898,6 +967,33 @@ def get_learning_analytics():
     }
     
     return jsonify(analytics)
+@app.route('/learning-roadmap', methods=['POST'])
+def learning_roadmap():
+    """
+    Generate personalized learning roadmap
+    """
+    data = request.get_json(force=True)
+
+    goal = data.get("goal", "").strip()
+    time_per_day = data.get("time_per_day", 1)
+    learning_style = data.get(
+        "learning_style",
+        student_model.learning_style_analyzer.get_dominant_style()
+    )
+
+    if not goal:
+        return jsonify({"error": "Learning goal is required"}), 400
+
+    analytics = student_model.get_analytics_summary()
+
+    roadmap = build_learning_roadmap(
+        goal=goal,
+        time_per_day=time_per_day,
+        learning_style=learning_style,
+        analytics=analytics
+    )
+
+    return jsonify(roadmap)
 
 @app.route('/knowledge-graph', methods=['GET'])
 def get_knowledge_graph():

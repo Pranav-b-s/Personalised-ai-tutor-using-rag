@@ -9,6 +9,13 @@ function App() {
   const [studentProfile, setStudentProfile] = useState(null);
   const [interactions, setInteractions] = useState([]);
   const chatBoxRef = useRef(null);
+  // Roadmap states
+  const [roadmapGoal, setRoadmapGoal] = useState("");
+  const [studyTime, setStudyTime] = useState("1");
+  const [learningStyle, setLearningStyle] = useState("visual");
+  const [roadmapLoading, setRoadmapLoading] = useState(false);
+  const [roadmapResult, setRoadmapResult] = useState(null);
+
 
   // Voice and Avatar states
   const [isListening, setIsListening] = useState(false);
@@ -244,6 +251,38 @@ function App() {
       setInteractions([]);
     }
   };
+
+  const generateRoadmap = async () => {
+  if (!roadmapGoal.trim()) {
+    alert("Please enter a learning goal");
+    return;
+  }
+
+  setRoadmapLoading(true);
+  setRoadmapResult(null);
+
+  try {
+    const res = await axios.post(
+      "http://127.0.0.1:5000/learning-roadmap",
+      {
+        goal: roadmapGoal,
+        time_per_day: studyTime,
+        learning_style: learningStyle,
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    setRoadmapResult(res.data);
+  } catch (err) {
+    console.error("Roadmap error:", err);
+    setRoadmapResult({ error: "Failed to generate roadmap" });
+  } finally {
+    setRoadmapLoading(false);
+  }
+};
+
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -604,7 +643,90 @@ function App() {
         >
           📚 Learning History
         </button>
+        <button
+          style={{
+            ...styles.tab,
+            ...(activeTab === "roadmap" ? styles.activeTab : {}),
+          }}
+          onClick={() => handleTabChange("roadmap")}
+        >
+          🗺️ Learning Roadmap
+        </button>
+
+
       </div>
+
+      {/* ROADMAP TAB */}
+      {activeTab === "roadmap" && (
+        <div style={styles.profileContainer}>
+          <h3 style={styles.sectionTitle}>🗺️ Personalized Learning Roadmap</h3>
+
+          <input
+            style={styles.input}
+            placeholder="What do you want to learn?"
+            value={roadmapGoal}
+            onChange={(e) => setRoadmapGoal(e.target.value)}
+          />
+
+          <select
+            style={styles.input}
+            value={studyTime}
+            onChange={(e) => setStudyTime(e.target.value)}
+          >
+            <option value="0.5">30 minutes / day</option>
+            <option value="1">1 hour / day</option>
+            <option value="2">2 hours / day</option>
+            <option value="3">3+ hours / day</option>
+          </select>
+
+          <select
+            style={styles.input}
+            value={learningStyle}
+            onChange={(e) => setLearningStyle(e.target.value)}
+          >
+            <option value="visual">Visual</option>
+            <option value="reading">Reading</option>
+            <option value="kinesthetic">Hands-on</option>
+            <option value="auditory">Auditory</option>
+          </select>
+
+          <button onClick={generateRoadmap} style={styles.button}>
+            🚀 Generate Roadmap
+          </button>
+
+          {roadmapLoading && <p>⏳ Generating roadmap...</p>}
+
+          {roadmapResult && roadmapResult.error && (
+            <p style={{ color: "red" }}>{roadmapResult.error}</p>
+          )}
+
+          {roadmapResult && !roadmapResult.error && (
+            <div style={styles.statCard}>
+              <h4>📅 Weekly Plan</h4>
+              <ul>
+                {roadmapResult.weekly_plan.map((week, i) => (
+                  <li key={i}>{week}</li>
+                ))}
+              </ul>
+
+              <h4>🎯 Study Pattern</h4>
+              <p>{roadmapResult.study_pattern}</p>
+
+              <h4>📺 Recommended Resources</h4>
+              <ul>
+                {roadmapResult.resources.map((r, i) => (
+                  <li key={i}>
+                    <a href={r.link} target="_blank" rel="noreferrer">
+                      {r.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* Tab Content */}
       <div style={styles.contentArea}>
@@ -863,8 +985,75 @@ function App() {
             <button onClick={fetchInteractions} style={styles.refreshButton}>
               🔄 Refresh History
             </button>
+          {/* ROADMAP TAB */}
+          {activeTab === "roadmap" && (
+            <div style={styles.profileContainer}>
+              <h3 style={styles.sectionTitle}>🗺️ Personalized Learning Roadmap</h3>
+
+              <input
+                style={styles.input}
+                placeholder="What do you want to learn?"
+                value={roadmapGoal}
+                onChange={(e) => setRoadmapGoal(e.target.value)}
+              />
+
+              <select
+                style={styles.input}
+                value={studyTime}
+                onChange={(e) => setStudyTime(e.target.value)}
+              >
+                <option value="0.5">30 minutes / day</option>
+                <option value="1">1 hour / day</option>
+                <option value="2">2 hours / day</option>
+              </select>
+
+              <select
+                style={styles.input}
+                value={learningStyle}
+                onChange={(e) => setLearningStyle(e.target.value)}
+              >
+                <option value="visual">Visual</option>
+                <option value="reading">Reading</option>
+                <option value="hands-on">Hands-on</option>
+              </select>
+
+              <button onClick={generateRoadmap} style={styles.button}>
+                🚀 Generate Roadmap
+              </button>
+
+              {roadmapLoading && <p>Generating roadmap...</p>}
+
+              {roadmapResult && !roadmapResult.error && (
+                <div style={styles.statCard}>
+                  <h4>📅 Weekly Plan</h4>
+                  <ul>
+                    {roadmapResult.weekly_plan.map((week, i) => (
+                      <li key={i}>{week}</li>
+                    ))}
+                  </ul>
+
+                  <h4>🎯 Study Pattern</h4>
+                  <p>{roadmapResult.study_pattern}</p>
+
+                  <h4>📺 Recommended Resources</h4>
+                  <ul>
+                    {roadmapResult.resources.map((r, i) => (
+                      <li key={i}>
+                        <a href={r.link} target="_blank" rel="noreferrer">
+                          {r.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+
           </div>
         )}
+        
       </div>
 
       <p style={styles.footer}>
