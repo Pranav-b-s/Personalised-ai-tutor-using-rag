@@ -1,6 +1,6 @@
 {
   "topics_discussed": {
-    "name": 5,
+    "name": 6,
     "pranav": 1,
     "whats": 8,
     "python": 9,
@@ -46,7 +46,7 @@
     "history": 1,
     "sing": 1,
     "dream": 1,
-    "your": 1,
+    "your": 2,
     "eyes": 1,
     "song": 1,
     "navadeep": 1,
@@ -65,20 +65,20 @@
   },
   "difficulty_preferences": {},
   "question_types": {
-    "statement": 60,
+    "statement": 69,
     "general_question": 2,
     "concept_explanation": 2
   },
   "learning_patterns": [],
-  "total_interactions": 64,
+  "total_interactions": 73,
   "first_interaction": "2025-10-16T12:35:26.722041",
-  "last_interaction": "2026-01-05T22:13:26.951775",
+  "last_interaction": "2026-01-06T00:11:42.723532",
   "learning_style_scores": {
     "auditory": 4.0,
     "kinesthetic": 3.0
   },
   "personality_traits": {
-    "formality_preference": 5,
+    "formality_preference": 4.5,
     "humor_receptiveness": 5,
     "detail_orientation": 5,
     "encouragement_need": 5,
@@ -490,16 +490,18 @@
       "mastery_level": 1.8
     },
     "your": {
-      "exposure_count": 1,
+      "exposure_count": 2,
       "question_types": [
+        "statement",
         "statement"
       ],
       "complexity_progression": [
+        0,
         0
       ],
       "first_seen": "2025-10-17T15:05:54.282934",
-      "last_seen": "2025-10-17T15:05:54.282934",
-      "mastery_level": 1.8
+      "last_seen": "2026-01-06T00:11:28.094569",
+      "mastery_level": 2.6
     },
     "eyes": {
       "exposure_count": 1,
@@ -526,16 +528,18 @@
       "mastery_level": 1.8
     },
     "name": {
-      "exposure_count": 1,
+      "exposure_count": 2,
       "question_types": [
+        "statement",
         "statement"
       ],
       "complexity_progression": [
+        0,
         0
       ],
       "first_seen": "2025-10-21T15:04:22.043637",
-      "last_seen": "2025-10-21T15:04:22.043637",
-      "mastery_level": 1.8
+      "last_seen": "2026-01-06T00:11:28.094569",
+      "mastery_level": 2.6
     },
     "navadeep": {
       "exposure_count": 1,
@@ -727,8 +731,8 @@
     }
   },
   "engagement_metrics": {
-    "engagement_level": "warming_up",
-    "interaction_frequency": "new_student",
+    "engagement_level": "passive",
+    "interaction_frequency": "active",
     "follow_up_rate": 0.0
   }
 }

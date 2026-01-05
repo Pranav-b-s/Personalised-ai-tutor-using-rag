@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect,memo } from "react";
 import axios from "axios";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
@@ -7,6 +7,423 @@ import "./avatar.css";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import Roadmap from "./Roadmap";
 
+
+
+ // 3D Avatar Head Component
+  const AvatarHead = ({ expression, mouthOpen, isListening, isSpeaking }) => {
+    const headRef = useRef();
+    const leftEyeRef = useRef();
+    const rightEyeRef = useRef();
+    const mouthRef = useRef();
+    const blinkTimeRef = useRef(0);
+    
+
+    useFrame((state) => {
+      const time = state.clock.getElapsedTime();
+      
+      blinkTimeRef.current += 0.016;
+      if (blinkTimeRef.current > 3) {
+        const blinkProgress = (blinkTimeRef.current - 3) / 0.15;
+        if (blinkProgress < 1) {
+          const scale = 1 - Math.sin(blinkProgress * Math.PI) * 0.9;
+          if (leftEyeRef.current) leftEyeRef.current.scale.y = scale;
+          if (rightEyeRef.current) rightEyeRef.current.scale.y = scale;
+        } else if (blinkProgress >= 1 && blinkTimeRef.current > 3.15) {
+          blinkTimeRef.current = 0;
+          if (leftEyeRef.current) leftEyeRef.current.scale.y = 1;
+          if (rightEyeRef.current) rightEyeRef.current.scale.y = 1;
+        }
+      }
+
+      if (headRef.current) {
+        if (expression === "thinking") {
+          headRef.current.rotation.z = -0.1 + Math.sin(time * 0.5) * 0.05;
+          headRef.current.rotation.y = Math.sin(time * 0.8) * 0.15;
+        } else if (isListening) {
+          headRef.current.rotation.z = 0.05;
+          headRef.current.rotation.y = Math.sin(time * 2) * 0.05;
+        } else {
+          headRef.current.rotation.z = Math.sin(time * 0.3) * 0.02;
+          headRef.current.rotation.y = Math.sin(time * 0.5) * 0.03;
+        }
+      }
+if (mouthRef.current) {
+  if (isSpeaking) {
+    const t = state.clock.getElapsedTime();
+
+    // speech-driven openness (from App)
+    const speechOpen = 0.25 + mouthOpen * 0.8;
+
+    // tiny natural jitter so it doesn't feel robotic
+    const micro = Math.abs(Math.sin(t * 14)) * 0.1;
+
+    const emotionBoost =
+      expression === "happy" ? 1.15 :
+      expression === "sad" ? 0.8 : 1;
+
+    const finalOpen = (speechOpen + micro) * emotionBoost;
+
+    // keep lips visible
+    mouthRef.current.scale.y = 1;
+
+    // open mouth by depth instead of height
+    mouthRef.current.scale.z = 0.7 + finalOpen * 0.9;
+
+    // move mouth slightly down when opening
+    mouthRef.current.position.y = -0.28 - finalOpen * 0.06;
+
+  } else {
+    mouthRef.current.scale.set(1, 5, 0.65);
+    mouthRef.current.position.y = -0.28;
+  }
+}
+
+ 
+    });
+
+    
+
+    const skinColor = "#ffdbac";
+    const eyeColor = expression === "thinking" ? "#4f46e5" : expression === "sad" ? "#ef4444" : "#1e40af";
+
+    return (
+      <group ref={headRef}>
+        <mesh
+          position={[0, 0, 0]}
+          castShadow
+          scale={[0.92, 1, 1]} // 👈 slimmer cheeks
+        >
+          <sphereGeometry args={[1, 32, 32]} />
+          <meshStandardMaterial
+            color={skinColor}
+            roughness={0.8}
+            metalness={0.1}
+          />
+        </mesh>
+
+        {/* LEFT EAR */}
+          <mesh
+            position={[-0.92, -0.02, 0]}
+            rotation={[0, 0, Math.PI / 10]}
+            scale={[0.5, 0.75, 0.35]} // 👈 slim & flat
+            castShadow
+          >
+            <sphereGeometry args={[0.35, 20, 20]} />
+            <meshStandardMaterial
+              color={skinColor}
+              roughness={0.85}
+              metalness={0.05}
+            />
+          </mesh>
+
+          {/* RIGHT EAR */}
+          <mesh
+            position={[0.92, -0.02, 0]}
+            rotation={[0, 0, -Math.PI / 10]}
+            scale={[0.5, 0.75, 0.35]} // 👈 same shape
+            castShadow
+          >
+            <sphereGeometry args={[0.35, 20, 20]} />
+            <meshStandardMaterial
+              color={skinColor}
+              roughness={0.85}
+              metalness={0.05}
+            />
+          </mesh>
+
+        <group position={[-0.3, 0.2, 0.8]}>
+          <mesh>
+            <sphereGeometry args={[0.15, 16, 16]} />
+            <meshStandardMaterial color="white" roughness={0.3} />
+          </mesh>
+          <mesh ref={leftEyeRef} position={[0, 0, 0.1]}>
+            <sphereGeometry args={[0.08, 16, 16]} />
+            <meshStandardMaterial color={eyeColor} roughness={0.5} />
+          </mesh>
+          <mesh position={[0.02, 0.02, 0.15]}>
+            <sphereGeometry args={[0.03, 8, 8]} />
+            <meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.5} />
+          </mesh>
+        </group>
+
+        <group position={[0.3, 0.2, 0.8]}>
+          <mesh>
+            <sphereGeometry args={[0.15, 16, 16]} />
+            <meshStandardMaterial color="white" roughness={0.3} />
+          </mesh>
+          <mesh ref={rightEyeRef} position={[0, 0, 0.1]}>
+            <sphereGeometry args={[0.08, 16, 16]} />
+            <meshStandardMaterial color={eyeColor} roughness={0.5} />
+          </mesh>
+          <mesh position={[0.02, 0.02, 0.15]}>
+            <sphereGeometry args={[0.03, 8, 8]} />
+            <meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.5} />
+          </mesh>
+        </group>
+
+        <mesh position={[-0.3, 0.38, 0.75]} rotation={[0, 0, expression === "thinking" ? -0.2 : expression === "sad" ? 0.2 : 0.1]}>
+          <boxGeometry args={[0.25, 0.05, 0.05]} />
+          <meshStandardMaterial color="#8b7355" />
+        </mesh>
+        <mesh position={[0.3, 0.38, 0.75]} rotation={[0, 0, expression === "thinking" ? 0.2 : expression === "sad" ? -0.2 : -0.1]}>
+          <boxGeometry args={[0.25, 0.05, 0.05]} />
+          <meshStandardMaterial color="#8b7355" />
+        </mesh>
+
+        <group position={[0, 0.02, 0.93]}>
+          {/* main nose */}
+          <mesh>
+            <sphereGeometry args={[0.12, 16, 16]} />
+            <meshStandardMaterial color="#ffcba4" roughness={0.9} />
+          </mesh>
+
+          {/* tiny highlight */}
+          <mesh position={[0.03, 0.03, 0.08]}>
+            <sphereGeometry args={[0.03, 8, 8]} />
+            <meshStandardMaterial
+              color="#ffffff"
+              transparent
+              opacity={0.25}
+            />
+          </mesh>
+        </group>
+
+        <group ref={mouthRef} position={[0, -0.28, 0.87]}>
+          {/* upper lip */}
+          <mesh position={[0, 0.02, 0]}>
+            <boxGeometry args={[0.34, 0.04, 0.06]} />
+            <meshStandardMaterial
+              color="#d96b7c"
+              roughness={0.4}
+            />
+          </mesh>
+
+          {/* lower lip */}
+          <mesh position={[0, -0.02, 0]}>
+            <boxGeometry args={[0.32, 0.05, 0.07]} />
+            <meshStandardMaterial
+              color="#e07a8a"
+              roughness={0.35}
+            />
+          </mesh>
+        </group>
+
+
+        {(expression === "happy" || isSpeaking) && (
+          <>
+            <mesh position={[-0.6, -0.1, 0.6]}>
+              <sphereGeometry args={[0.15, 16, 16]} />
+              <meshStandardMaterial color="#ff9999" transparent opacity={0.4} />
+            </mesh>
+            <mesh position={[0.6, -0.1, 0.6]}>
+              <sphereGeometry args={[0.15, 16, 16]} />
+              <meshStandardMaterial color="#ff9999" transparent opacity={0.4} />
+            </mesh>
+          </>
+        )}
+
+        <mesh position={[0, -1.2, 0]} castShadow>
+          <cylinderGeometry args={[0.35, 0.4, 0.5, 16]} />
+          <meshStandardMaterial color={skinColor} roughness={0.8} />
+        </mesh>
+
+        <mesh position={[0, -1.8, 0]} castShadow>
+          <cylinderGeometry args={[0.75, 0.9, 1.2, 16]} />
+          <meshStandardMaterial color="#3b82f6" roughness={0.7} />
+        </mesh>
+
+        <mesh position={[0, -1.4, 0.3]} rotation={[0.3, 0, 0]} castShadow>
+          <boxGeometry args={[0.6, 0.15, 0.1]} />
+          <meshStandardMaterial color="#2563eb" roughness={0.6} />
+        </mesh>
+
+        {[0, -0.3, -0.6].map((yOffset, i) => (
+          <mesh key={i} position={[0, -1.5 + yOffset, 0.72]}>
+            <sphereGeometry args={[0.05, 8, 8]} />
+            <meshStandardMaterial color="white" roughness={0.4} metalness={0.3} />
+          </mesh>
+        ))}
+
+        {/* Cute boy hair */}
+          <group position={[0, 0.55, 0]}>
+
+            {/* main hair cap */}
+            <mesh castShadow>
+              <sphereGeometry args={[0.92, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.55]} />
+              <meshStandardMaterial
+                color="#3b2f2a"
+                roughness={0.85}
+                metalness={0.05}
+              />
+            </mesh>
+
+            {/* front bangs */}
+            {[ -0.35, 0, 0.35 ].map((x, i) => (
+              <mesh
+                key={i}
+                position={[x, -0.18, 0.75]}
+                rotation={[0.25, 0, 0]}
+                castShadow
+              >
+                <sphereGeometry args={[0.22, 16, 16]} />
+                <meshStandardMaterial
+                  color="#3b2f2a"
+                  roughness={0.9}
+                />
+              </mesh>
+            ))}
+
+            {/* side fluff left */}
+            <mesh position={[-0.75, 0.15, 0]} castShadow>
+              <sphereGeometry args={[0.28, 16, 16]} />
+              <meshStandardMaterial
+                color="#3b2f2a"
+                roughness={0.9}
+              />
+            </mesh>
+
+            {/* side fluff right */}
+            <mesh position={[0.75, 0.15, 0]} castShadow>
+              <sphereGeometry args={[0.28, 16, 16]} />
+              <meshStandardMaterial
+                color="#3b2f2a"
+                roughness={0.9}
+              />
+            </mesh>
+
+          </group>
+
+      </group>
+    );
+  };
+
+const ListeningParticles = () => {
+    const particlesRef = useRef();
+    
+    useFrame((state) => {
+      if (particlesRef.current) {
+        particlesRef.current.rotation.y = state.clock.getElapsedTime() * 0.5;
+      }
+    });
+
+    return (
+      <group ref={particlesRef}>
+        {[...Array(20)].map((_, i) => {
+          const angle = (i / 20) * Math.PI * 2;
+          const radius = 2.5;
+          return (
+            <mesh
+              key={i}
+              position={[
+                Math.cos(angle) * radius,
+                Math.sin(i * 0.5) * 0.5,
+                Math.sin(angle) * radius,
+              ]}
+            >
+              <sphereGeometry args={[0.05, 8, 8]} />
+              <meshStandardMaterial 
+                color="#10b981" 
+                emissive="#10b981" 
+                emissiveIntensity={1}
+              />
+            </mesh>
+          );
+        })}
+      </group>
+    );
+  };
+
+  const SpeakingWaves = () => {
+    const wavesRef = useRef([]);
+    
+    useFrame((state) => {
+      wavesRef.current.forEach((wave, i) => {
+        if (wave) {
+          wave.rotation.x = state.clock.getElapsedTime() * (0.5 + i * 0.2);
+          wave.rotation.y = state.clock.getElapsedTime() * (0.3 + i * 0.1);
+        }
+      });
+    });
+
+    return (
+      <group>
+        {[1.2, 1.6, 2.0].map((radius, i) => (
+          <mesh
+            key={i}
+            ref={(el) => (wavesRef.current[i] = el)}
+            position={[0, 0, 0]}
+          >
+            <torusGeometry args={[radius, 0.03, 16, 100]} />
+            <meshStandardMaterial
+              color="#10b981"
+              transparent
+              opacity={0.4 - i * 0.1}
+              emissive="#10b981"
+              emissiveIntensity={0.5}
+            />
+          </mesh>
+        ))}
+      </group>
+    );
+  };
+
+const RealisticAvatar = memo(({ avatarExpression, mouthOpen, isListening, isSpeaking }) => {
+    return (
+      <div className="avatar-container">
+        <Canvas
+          camera={{ position: [0, 0, 4], fov: 50 }}
+          className="avatar-canvas"
+          shadows
+        >
+          <PerspectiveCamera makeDefault position={[0, 0, 4]} />
+          
+          <ambientLight intensity={0.6} />
+          <directionalLight 
+            position={[5, 5, 5]} 
+            intensity={0.8} 
+            castShadow 
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+          />
+          <pointLight position={[-5, 3, -5]} intensity={0.4} color="#ffd6a5" />
+          <spotLight 
+            position={[0, 5, 0]} 
+            intensity={0.5} 
+            angle={0.6} 
+            penumbra={1}
+            castShadow
+          />
+
+          <AvatarHead
+            expression={avatarExpression}
+            mouthOpen={mouthOpen}
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+          />
+
+          {isListening && <ListeningParticles />}
+          {isSpeaking && <SpeakingWaves />}
+
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            minPolarAngle={Math.PI / 2.5}
+            maxPolarAngle={Math.PI / 1.5}
+            minAzimuthAngle={-Math.PI / 4}
+            maxAzimuthAngle={Math.PI / 4}
+          />
+        </Canvas>
+
+        {avatarExpression === "thinking" && (
+          <div className="thinking-indicator">
+            <div className="dot" style={{animationDelay: "0s"}} />
+            <div className="dot" style={{animationDelay: "0.2s"}} />
+            <div className="dot" style={{animationDelay: "0.4s"}} />
+          </div>
+        )}
+      </div>
+    );
+  });
 
 function App() {
   const [question, setQuestion] = useState("");
@@ -17,6 +434,8 @@ function App() {
   const [interactions, setInteractions] = useState([]);
   const chatBoxRef = useRef(null);
   const navigate = useNavigate();
+  const lastSpeechTimeRef = useRef(Date.now());
+
 
 
   // Voice and Avatar states
@@ -51,18 +470,21 @@ function App() {
       };
 
       recognitionRef.current.onresult = (event) => {
-        let interim = "";
+        let finalText = "";
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            interim += transcript + " ";
+            finalText += transcript + " ";
           }
         }
 
-        if (interim.trim()) {
-          setQuestion(interim.trim());
+        if (finalText.trim()) {
+          setQuestion(finalText.trim());
+          lastSpeechTimeRef.current = Date.now();
         }
       };
+
 
       recognitionRef.current.onerror = () => {
         setIsListening(false);
@@ -70,9 +492,15 @@ function App() {
       };
 
       recognitionRef.current.onend = () => {
-        setIsListening(false);
-        setAvatarExpression("neutral");
+        if (isListening) {
+          try {
+            recognitionRef.current.start(); // 🔥 auto-restart
+          } catch (e) {
+            console.warn("Recognition restart failed", e);
+          }
+        }
       };
+
     }
 
     return () => {
@@ -87,22 +515,7 @@ function App() {
   }, []);
 
   // Animate mouth based on speech
-  useEffect(() => {
-    if (!isSpeaking) {
-      setMouthOpen(0);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setMouthOpen(() => {
-        const variation = Math.sin(Date.now() / 100) * 0.5 + 0.5;
-        return variation;
-      });
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [isSpeaking]);
-
+ 
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
       recognitionRef.current.start();
@@ -126,13 +539,40 @@ function App() {
       }
     }
   };
+  const cleanTextForSpeech = (text) => {
+  if (!text) return "";
+
+  return text
+    // remove emojis
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "")
+
+    // remove markdown symbols
+    .replace(/[*_`~>#-]/g, "")
+
+    // replace multiple punctuation with a pause
+    .replace(/[.!?]+/g, ".")
+
+    // remove commas, colons, semicolons
+    .replace(/[,;:]/g, "")
+
+    // remove brackets and symbols
+    .replace(/[()[\]{}<>]/g, "")
+
+    // normalize spaces
+    .replace(/\s+/g, " ")
+
+    .trim();
+};
+
 
   const speakText = (text) => {
     synthRef.current.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1.1;
+    const cleanText = cleanTextForSpeech(text);
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.05;
     utterance.volume = 1;
 
     utterance.onstart = () => {
@@ -275,293 +715,30 @@ function App() {
     navigate("/"); // ✅ GO BACK TO HOME
   }
 };
-  // 3D Avatar Head Component
-  const AvatarHead = ({ expression, mouthOpen, isListening, isSpeaking }) => {
-    const headRef = useRef();
-    const leftEyeRef = useRef();
-    const rightEyeRef = useRef();
-    const mouthRef = useRef();
-    const blinkTimeRef = useRef(0);
+ 
+  
+// Drive mouth openness while speaking (speech rhythm)
+useEffect(() => {
+  if (!isSpeaking) {
+    setMouthOpen(0);
+    return;
+  }
 
-    useFrame((state) => {
-      const time = state.clock.getElapsedTime();
-      
-      blinkTimeRef.current += 0.016;
-      if (blinkTimeRef.current > 3) {
-        const blinkProgress = (blinkTimeRef.current - 3) / 0.15;
-        if (blinkProgress < 1) {
-          const scale = 1 - Math.sin(blinkProgress * Math.PI) * 0.9;
-          if (leftEyeRef.current) leftEyeRef.current.scale.y = scale;
-          if (rightEyeRef.current) rightEyeRef.current.scale.y = scale;
-        } else if (blinkProgress >= 1 && blinkTimeRef.current > 3.15) {
-          blinkTimeRef.current = 0;
-          if (leftEyeRef.current) leftEyeRef.current.scale.y = 1;
-          if (rightEyeRef.current) rightEyeRef.current.scale.y = 1;
-        }
-      }
+  let t = 0;
+  const interval = setInterval(() => {
+    t += 0.15;
 
-      if (headRef.current) {
-        if (expression === "thinking") {
-          headRef.current.rotation.z = -0.1 + Math.sin(time * 0.5) * 0.05;
-          headRef.current.rotation.y = Math.sin(time * 0.8) * 0.15;
-        } else if (isListening) {
-          headRef.current.rotation.z = 0.05;
-          headRef.current.rotation.y = Math.sin(time * 2) * 0.05;
-        } else {
-          headRef.current.rotation.z = Math.sin(time * 0.3) * 0.02;
-          headRef.current.rotation.y = Math.sin(time * 0.5) * 0.03;
-        }
-      }
+    // natural speech envelope (open → close → pause)
+    const open =
+      Math.abs(Math.sin(t)) * 0.8 +
+      Math.abs(Math.sin(t * 0.5)) * 0.2;
 
-      if (mouthRef.current && isSpeaking) {
-        mouthRef.current.scale.y = 0.3 + mouthOpen * 0.7;
-      } else if (mouthRef.current) {
-        mouthRef.current.scale.y = 0.3;
-      }
-    });
+    setMouthOpen(open);
+  }, 50);
 
-    const skinColor = "#ffdbac";
-    const eyeColor = expression === "thinking" ? "#4f46e5" : expression === "sad" ? "#ef4444" : "#1e40af";
+  return () => clearInterval(interval);
+}, [isSpeaking]);
 
-    return (
-      <group ref={headRef}>
-        <mesh position={[0, 0, 0]} castShadow>
-          <sphereGeometry args={[1, 32, 32]} />
-          <meshStandardMaterial color={skinColor} roughness={0.8} metalness={0.1} />
-        </mesh>
-
-        <mesh position={[-0.95, 0, 0]} rotation={[0, 0, Math.PI / 6]} castShadow>
-          <sphereGeometry args={[0.25, 16, 16]} />
-          <meshStandardMaterial color="#ffcba4" roughness={0.9} />
-        </mesh>
-        <mesh position={[0.95, 0, 0]} rotation={[0, 0, -Math.PI / 6]} castShadow>
-          <sphereGeometry args={[0.25, 16, 16]} />
-          <meshStandardMaterial color="#ffcba4" roughness={0.9} />
-        </mesh>
-
-        <group position={[-0.3, 0.2, 0.8]}>
-          <mesh>
-            <sphereGeometry args={[0.15, 16, 16]} />
-            <meshStandardMaterial color="white" roughness={0.3} />
-          </mesh>
-          <mesh ref={leftEyeRef} position={[0, 0, 0.1]}>
-            <sphereGeometry args={[0.08, 16, 16]} />
-            <meshStandardMaterial color={eyeColor} roughness={0.5} />
-          </mesh>
-          <mesh position={[0.02, 0.02, 0.15]}>
-            <sphereGeometry args={[0.03, 8, 8]} />
-            <meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.5} />
-          </mesh>
-        </group>
-
-        <group position={[0.3, 0.2, 0.8]}>
-          <mesh>
-            <sphereGeometry args={[0.15, 16, 16]} />
-            <meshStandardMaterial color="white" roughness={0.3} />
-          </mesh>
-          <mesh ref={rightEyeRef} position={[0, 0, 0.1]}>
-            <sphereGeometry args={[0.08, 16, 16]} />
-            <meshStandardMaterial color={eyeColor} roughness={0.5} />
-          </mesh>
-          <mesh position={[0.02, 0.02, 0.15]}>
-            <sphereGeometry args={[0.03, 8, 8]} />
-            <meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.5} />
-          </mesh>
-        </group>
-
-        <mesh position={[-0.3, 0.38, 0.75]} rotation={[0, 0, expression === "thinking" ? -0.2 : expression === "sad" ? 0.2 : 0.1]}>
-          <boxGeometry args={[0.25, 0.05, 0.05]} />
-          <meshStandardMaterial color="#8b7355" />
-        </mesh>
-        <mesh position={[0.3, 0.38, 0.75]} rotation={[0, 0, expression === "thinking" ? 0.2 : expression === "sad" ? -0.2 : -0.1]}>
-          <boxGeometry args={[0.25, 0.05, 0.05]} />
-          <meshStandardMaterial color="#8b7355" />
-        </mesh>
-
-        <mesh position={[0, 0, 0.95]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.1, 0.3, 8]} />
-          <meshStandardMaterial color="#ffcba4" roughness={0.8} />
-        </mesh>
-
-        <mesh ref={mouthRef} position={[0, -0.25, 0.85]}>
-          <sphereGeometry args={[0.15, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshStandardMaterial 
-            color={expression === "happy" ? "#ff6b9d" : "#d97676"} 
-            side={THREE.DoubleSide}
-            roughness={0.6}
-          />
-        </mesh>
-
-        {(expression === "happy" || isSpeaking) && (
-          <>
-            <mesh position={[-0.6, -0.1, 0.6]}>
-              <sphereGeometry args={[0.15, 16, 16]} />
-              <meshStandardMaterial color="#ff9999" transparent opacity={0.4} />
-            </mesh>
-            <mesh position={[0.6, -0.1, 0.6]}>
-              <sphereGeometry args={[0.15, 16, 16]} />
-              <meshStandardMaterial color="#ff9999" transparent opacity={0.4} />
-            </mesh>
-          </>
-        )}
-
-        <mesh position={[0, -1.2, 0]} castShadow>
-          <cylinderGeometry args={[0.35, 0.4, 0.5, 16]} />
-          <meshStandardMaterial color={skinColor} roughness={0.8} />
-        </mesh>
-
-        <mesh position={[0, -1.8, 0]} castShadow>
-          <cylinderGeometry args={[0.75, 0.9, 1.2, 16]} />
-          <meshStandardMaterial color="#3b82f6" roughness={0.7} />
-        </mesh>
-
-        <mesh position={[0, -1.4, 0.3]} rotation={[0.3, 0, 0]} castShadow>
-          <boxGeometry args={[0.6, 0.15, 0.1]} />
-          <meshStandardMaterial color="#2563eb" roughness={0.6} />
-        </mesh>
-
-        {[0, -0.3, -0.6].map((yOffset, i) => (
-          <mesh key={i} position={[0, -1.5 + yOffset, 0.72]}>
-            <sphereGeometry args={[0.05, 8, 8]} />
-            <meshStandardMaterial color="white" roughness={0.4} metalness={0.3} />
-          </mesh>
-        ))}
-
-        <mesh position={[0, 0.6, -0.1]} castShadow>
-          <sphereGeometry args={[0.9, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshStandardMaterial color="#3d2817" roughness={0.95} />
-        </mesh>
-      </group>
-    );
-  };
-
-  const ListeningParticles = () => {
-    const particlesRef = useRef();
-    
-    useFrame((state) => {
-      if (particlesRef.current) {
-        particlesRef.current.rotation.y = state.clock.getElapsedTime() * 0.5;
-      }
-    });
-
-    return (
-      <group ref={particlesRef}>
-        {[...Array(20)].map((_, i) => {
-          const angle = (i / 20) * Math.PI * 2;
-          const radius = 2.5;
-          return (
-            <mesh
-              key={i}
-              position={[
-                Math.cos(angle) * radius,
-                Math.sin(i * 0.5) * 0.5,
-                Math.sin(angle) * radius,
-              ]}
-            >
-              <sphereGeometry args={[0.05, 8, 8]} />
-              <meshStandardMaterial 
-                color="#10b981" 
-                emissive="#10b981" 
-                emissiveIntensity={1}
-              />
-            </mesh>
-          );
-        })}
-      </group>
-    );
-  };
-
-  const SpeakingWaves = () => {
-    const wavesRef = useRef([]);
-    
-    useFrame((state) => {
-      wavesRef.current.forEach((wave, i) => {
-        if (wave) {
-          wave.rotation.x = state.clock.getElapsedTime() * (0.5 + i * 0.2);
-          wave.rotation.y = state.clock.getElapsedTime() * (0.3 + i * 0.1);
-        }
-      });
-    });
-
-    return (
-      <group>
-        {[1.2, 1.6, 2.0].map((radius, i) => (
-          <mesh
-            key={i}
-            ref={(el) => (wavesRef.current[i] = el)}
-            position={[0, 0, 0]}
-          >
-            <torusGeometry args={[radius, 0.03, 16, 100]} />
-            <meshStandardMaterial
-              color="#10b981"
-              transparent
-              opacity={0.4 - i * 0.1}
-              emissive="#10b981"
-              emissiveIntensity={0.5}
-            />
-          </mesh>
-        ))}
-      </group>
-    );
-  };
-
-  const RealisticAvatar = () => {
-    return (
-      <div className="avatar-container">
-        <Canvas
-          camera={{ position: [0, 0, 4], fov: 50 }}
-          className="avatar-canvas"
-          shadows
-        >
-          <PerspectiveCamera makeDefault position={[0, 0, 4]} />
-          
-          <ambientLight intensity={0.6} />
-          <directionalLight 
-            position={[5, 5, 5]} 
-            intensity={0.8} 
-            castShadow 
-            shadow-mapSize-width={1024}
-            shadow-mapSize-height={1024}
-          />
-          <pointLight position={[-5, 3, -5]} intensity={0.4} color="#ffd6a5" />
-          <spotLight 
-            position={[0, 5, 0]} 
-            intensity={0.5} 
-            angle={0.6} 
-            penumbra={1}
-            castShadow
-          />
-
-          <AvatarHead
-            expression={avatarExpression}
-            mouthOpen={mouthOpen}
-            isListening={isListening}
-            isSpeaking={isSpeaking}
-          />
-
-          {isListening && <ListeningParticles />}
-          {isSpeaking && <SpeakingWaves />}
-
-          <OrbitControls
-            enableZoom={false}
-            enablePan={false}
-            minPolarAngle={Math.PI / 2.5}
-            maxPolarAngle={Math.PI / 1.5}
-            minAzimuthAngle={-Math.PI / 4}
-            maxAzimuthAngle={Math.PI / 4}
-          />
-        </Canvas>
-
-        {avatarExpression === "thinking" && (
-          <div className="thinking-indicator">
-            <div className="dot" style={{animationDelay: "0s"}} />
-            <div className="dot" style={{animationDelay: "0.2s"}} />
-            <div className="dot" style={{animationDelay: "0.4s"}} />
-          </div>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="app-wrapper">
@@ -606,7 +783,13 @@ function App() {
                 {activeTab === "chat" && (
                   <div className="chat-layout">
                     <aside className="avatar-sidebar">
-                      <RealisticAvatar />
+                      <RealisticAvatar
+                        avatarExpression={avatarExpression}
+                        mouthOpen={mouthOpen}
+                        isListening={isListening}
+                        isSpeaking={isSpeaking}
+                      />
+
 
                       <div className="voice-controls">
                         <button

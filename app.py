@@ -10,6 +10,9 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -743,8 +746,7 @@ def clean_text(text):
 
 # --- OpenRouter setup ---
 OPENROUTER_API_KEY = os.getenv(
-    "OPENROUTER_API_KEY", 
-    "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"
+    "OPENROUTER_API_KEY"
 )
 MODEL = "deepseek/deepseek-r1-0528:free"
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
