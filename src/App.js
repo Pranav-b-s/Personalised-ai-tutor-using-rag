@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
+import * as THREE from "three";
 
 function App() {
   const [question, setQuestion] = useState("");
@@ -9,13 +12,13 @@ function App() {
   const [studentProfile, setStudentProfile] = useState(null);
   const [interactions, setInteractions] = useState([]);
   const chatBoxRef = useRef(null);
+  
   // Roadmap states
   const [roadmapGoal, setRoadmapGoal] = useState("");
   const [studyTime, setStudyTime] = useState("1");
   const [learningStyle, setLearningStyle] = useState("visual");
   const [roadmapLoading, setRoadmapLoading] = useState(false);
   const [roadmapResult, setRoadmapResult] = useState(null);
-
 
   // Voice and Avatar states
   const [isListening, setIsListening] = useState(false);
@@ -104,7 +107,6 @@ function App() {
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
       recognitionRef.current.start();
-      // Auto-stop after 10 seconds of silence
       if (listeningTimeoutRef.current) {
         clearTimeout(listeningTimeoutRef.current);
       }
@@ -253,36 +255,35 @@ function App() {
   };
 
   const generateRoadmap = async () => {
-  if (!roadmapGoal.trim()) {
-    alert("Please enter a learning goal");
-    return;
-  }
+    if (!roadmapGoal.trim()) {
+      alert("Please enter a learning goal");
+      return;
+    }
 
-  setRoadmapLoading(true);
-  setRoadmapResult(null);
+    setRoadmapLoading(true);
+    setRoadmapResult(null);
 
-  try {
-    const res = await axios.post(
-      "http://127.0.0.1:5000/learning-roadmap",
-      {
-        goal: roadmapGoal,
-        time_per_day: studyTime,
-        learning_style: learningStyle,
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    try {
+      const res = await axios.post(
+        "http://127.0.0.1:5000/learning-roadmap",
+        {
+          goal: roadmapGoal,
+          time_per_day: studyTime,
+          learning_style: learningStyle,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-    setRoadmapResult(res.data);
-  } catch (err) {
-    console.error("Roadmap error:", err);
-    setRoadmapResult({ error: "Failed to generate roadmap" });
-  } finally {
-    setRoadmapLoading(false);
-  }
-};
-
+      setRoadmapResult(res.data);
+    } catch (err) {
+      console.error("Roadmap error:", err);
+      setRoadmapResult({ error: "Failed to generate roadmap" });
+    } finally {
+      setRoadmapLoading(false);
+    }
+  };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -295,456 +296,373 @@ function App() {
     }
   };
 
-  // Realistic 3D-style Avatar Component
-  const RealisticAvatar = () => {
-    const eyeBlinkAnimation = `
-      @keyframes blink {
-        0%, 49%, 51%, 100% { scaleY: 1; }
-        50% { scaleY: 0.1; }
-      }
-    `;
+  // 3D Avatar Head Component
+  const AvatarHead = ({ expression, mouthOpen, isListening, isSpeaking }) => {
+    const headRef = useRef();
+    const leftEyeRef = useRef();
+    const rightEyeRef = useRef();
+    const mouthRef = useRef();
+    const blinkTimeRef = useRef(0);
 
-    const getEyeColor = () => {
-      switch (avatarExpression) {
-        case "thinking":
-          return "#4f46e5";
-        case "sad":
-          return "#ef4444";
-        default:
-          return "#1e40af";
+    useFrame((state) => {
+      const time = state.clock.getElapsedTime();
+      
+      // Blink animation
+      blinkTimeRef.current += 0.016;
+      if (blinkTimeRef.current > 3) {
+        const blinkProgress = (blinkTimeRef.current - 3) / 0.15;
+        if (blinkProgress < 1) {
+          const scale = 1 - Math.sin(blinkProgress * Math.PI) * 0.9;
+          if (leftEyeRef.current) leftEyeRef.current.scale.y = scale;
+          if (rightEyeRef.current) rightEyeRef.current.scale.y = scale;
+        } else if (blinkProgress >= 1 && blinkTimeRef.current > 3.15) {
+          blinkTimeRef.current = 0;
+          if (leftEyeRef.current) leftEyeRef.current.scale.y = 1;
+          if (rightEyeRef.current) rightEyeRef.current.scale.y = 1;
+        }
       }
-    };
 
-    const getMouthPath = () => {
-      const open = mouthOpen;
-      if (isSpeaking) {
-        return `M 95 95 Q 100 ${95 + open * 15} 105 95`;
+      // Head movements
+      if (headRef.current) {
+        if (expression === "thinking") {
+          headRef.current.rotation.z = -0.1 + Math.sin(time * 0.5) * 0.05;
+          headRef.current.rotation.y = Math.sin(time * 0.8) * 0.15;
+        } else if (isListening) {
+          headRef.current.rotation.z = 0.05;
+          headRef.current.rotation.y = Math.sin(time * 2) * 0.05;
+        } else {
+          headRef.current.rotation.z = Math.sin(time * 0.3) * 0.02;
+          headRef.current.rotation.y = Math.sin(time * 0.5) * 0.03;
+        }
       }
 
-      switch (avatarExpression) {
-        case "happy":
-          return "M 90 90 Q 100 105 110 90";
-        case "sad":
-          return "M 90 110 Q 100 95 110 110";
-        case "thinking":
-          return "M 95 100 L 105 100";
-        default:
-          return "M 95 100 L 105 100";
+      // Mouth animation
+      if (mouthRef.current && isSpeaking) {
+        mouthRef.current.scale.y = 0.3 + mouthOpen * 0.7;
+      } else if (mouthRef.current) {
+        mouthRef.current.scale.y = 0.3;
       }
-    };
+    });
 
-    const getHeadTilt = () => {
-      if (avatarExpression === "thinking") return "rotate(-5deg)";
-      if (isListening) return "rotate(3deg)";
-      return "rotate(0deg)";
-    };
+    const skinColor = "#ffdbac";
+    const eyeColor = expression === "thinking" ? "#4f46e5" : expression === "sad" ? "#ef4444" : "#1e40af";
 
     return (
-      <div style={styles.avatarContainer}>
-        <style>{eyeBlinkAnimation}</style>
-        <svg
-          width="300"
-          height="350"
-          viewBox="0 0 200 280"
-          style={{
-            filter: "drop-shadow(0 10px 30px rgba(0,0,0,0.3))",
-            transform: getHeadTilt(),
-            transition: "transform 0.3s ease",
-          }}
-        >
-          {/* Head - Gradient */}
-          <defs>
-            <linearGradient
-              id="headGradient"
-              x1="0%"
-              y1="0%"
-              x2="0%"
-              y2="100%"
+      <group ref={headRef}>
+        {/* Head */}
+        <mesh position={[0, 0, 0]} castShadow>
+          <sphereGeometry args={[1, 32, 32]} />
+          <meshStandardMaterial color={skinColor} roughness={0.8} metalness={0.1} />
+        </mesh>
+
+        {/* Ears */}
+        <mesh position={[-0.95, 0, 0]} rotation={[0, 0, Math.PI / 6]} castShadow>
+          <sphereGeometry args={[0.25, 16, 16]} />
+          <meshStandardMaterial color="#ffcba4" roughness={0.9} />
+        </mesh>
+        <mesh position={[0.95, 0, 0]} rotation={[0, 0, -Math.PI / 6]} castShadow>
+          <sphereGeometry args={[0.25, 16, 16]} />
+          <meshStandardMaterial color="#ffcba4" roughness={0.9} />
+        </mesh>
+
+        {/* Eyes - Left */}
+        <group position={[-0.3, 0.2, 0.8]}>
+          <mesh>
+            <sphereGeometry args={[0.15, 16, 16]} />
+            <meshStandardMaterial color="white" roughness={0.3} />
+          </mesh>
+          <mesh ref={leftEyeRef} position={[0, 0, 0.1]}>
+            <sphereGeometry args={[0.08, 16, 16]} />
+            <meshStandardMaterial color={eyeColor} roughness={0.5} />
+          </mesh>
+          <mesh position={[0.02, 0.02, 0.15]}>
+            <sphereGeometry args={[0.03, 8, 8]} />
+            <meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.5} />
+          </mesh>
+        </group>
+
+        {/* Eyes - Right */}
+        <group position={[0.3, 0.2, 0.8]}>
+          <mesh>
+            <sphereGeometry args={[0.15, 16, 16]} />
+            <meshStandardMaterial color="white" roughness={0.3} />
+          </mesh>
+          <mesh ref={rightEyeRef} position={[0, 0, 0.1]}>
+            <sphereGeometry args={[0.08, 16, 16]} />
+            <meshStandardMaterial color={eyeColor} roughness={0.5} />
+          </mesh>
+          <mesh position={[0.02, 0.02, 0.15]}>
+            <sphereGeometry args={[0.03, 8, 8]} />
+            <meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.5} />
+          </mesh>
+        </group>
+
+        {/* Eyebrows */}
+        <mesh position={[-0.3, 0.38, 0.75]} rotation={[0, 0, expression === "thinking" ? -0.2 : expression === "sad" ? 0.2 : 0.1]}>
+          <boxGeometry args={[0.25, 0.05, 0.05]} />
+          <meshStandardMaterial color="#8b7355" />
+        </mesh>
+        <mesh position={[0.3, 0.38, 0.75]} rotation={[0, 0, expression === "thinking" ? 0.2 : expression === "sad" ? -0.2 : -0.1]}>
+          <boxGeometry args={[0.25, 0.05, 0.05]} />
+          <meshStandardMaterial color="#8b7355" />
+        </mesh>
+
+        {/* Nose */}
+        <mesh position={[0, 0, 0.95]} rotation={[Math.PI, 0, 0]}>
+          <coneGeometry args={[0.1, 0.3, 8]} />
+          <meshStandardMaterial color="#ffcba4" roughness={0.8} />
+        </mesh>
+
+        {/* Mouth */}
+        <mesh ref={mouthRef} position={[0, -0.25, 0.85]}>
+          <sphereGeometry args={[0.15, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial 
+            color={expression === "happy" ? "#ff6b9d" : "#d97676"} 
+            side={THREE.DoubleSide}
+            roughness={0.6}
+          />
+        </mesh>
+
+        {/* Cheeks (blush) */}
+        {(expression === "happy" || isSpeaking) && (
+          <>
+            <mesh position={[-0.6, -0.1, 0.6]}>
+              <sphereGeometry args={[0.15, 16, 16]} />
+              <meshStandardMaterial color="#ff9999" transparent opacity={0.4} />
+            </mesh>
+            <mesh position={[0.6, -0.1, 0.6]}>
+              <sphereGeometry args={[0.15, 16, 16]} />
+              <meshStandardMaterial color="#ff9999" transparent opacity={0.4} />
+            </mesh>
+          </>
+        )}
+
+        {/* Neck */}
+        <mesh position={[0, -1.2, 0]} castShadow>
+          <cylinderGeometry args={[0.35, 0.4, 0.5, 16]} />
+          <meshStandardMaterial color={skinColor} roughness={0.8} />
+        </mesh>
+
+        {/* Shirt */}
+        <mesh position={[0, -1.8, 0]} castShadow>
+          <cylinderGeometry args={[0.75, 0.9, 1.2, 16]} />
+          <meshStandardMaterial color="#3b82f6" roughness={0.7} />
+        </mesh>
+
+        {/* Shirt Collar */}
+        <mesh position={[0, -1.4, 0.3]} rotation={[0.3, 0, 0]} castShadow>
+          <boxGeometry args={[0.6, 0.15, 0.1]} />
+          <meshStandardMaterial color="#2563eb" roughness={0.6} />
+        </mesh>
+
+        {/* Shirt Buttons */}
+        {[0, -0.3, -0.6].map((yOffset, i) => (
+          <mesh key={i} position={[0, -1.5 + yOffset, 0.72]}>
+            <sphereGeometry args={[0.05, 8, 8]} />
+            <meshStandardMaterial color="white" roughness={0.4} metalness={0.3} />
+          </mesh>
+        ))}
+
+        {/* Hair */}
+        <mesh position={[0, 0.6, -0.1]} castShadow>
+          <sphereGeometry args={[0.9, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color="#3d2817" roughness={0.95} />
+        </mesh>
+      </group>
+    );
+  };
+
+  // Listening particles
+  const ListeningParticles = () => {
+    const particlesRef = useRef();
+    
+    useFrame((state) => {
+      if (particlesRef.current) {
+        particlesRef.current.rotation.y = state.clock.getElapsedTime() * 0.5;
+      }
+    });
+
+    return (
+      <group ref={particlesRef}>
+        {[...Array(20)].map((_, i) => {
+          const angle = (i / 20) * Math.PI * 2;
+          const radius = 2.5;
+          return (
+            <mesh
+              key={i}
+              position={[
+                Math.cos(angle) * radius,
+                Math.sin(i * 0.5) * 0.5,
+                Math.sin(angle) * radius,
+              ]}
             >
-              <stop offset="0%" stopColor="#fdbcb4" />
-              <stop offset="100%" stopColor="#f5a593" />
-            </linearGradient>
-            <radialGradient id="highlight" cx="30%" cy="30%">
-              <stop offset="0%" stopColor="white" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="white" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-
-          {/* Head */}
-          <ellipse cx="100" cy="80" rx="55" ry="65" fill="url(#headGradient)" />
-
-          {/* Shine */}
-          <ellipse cx="75" cy="50" rx="25" ry="35" fill="url(#highlight)" />
-
-          {/* Ears */}
-          <ellipse
-            cx="50"
-            cy="70"
-            rx="15"
-            ry="25"
-            fill="#f5a593"
-            opacity="0.8"
-          />
-          <ellipse
-            cx="150"
-            cy="70"
-            rx="15"
-            ry="25"
-            fill="#f5a593"
-            opacity="0.8"
-          />
-
-          {/* Eyes */}
-          <g>
-            {/* Left Eye */}
-            <ellipse
-              cx="75"
-              cy="70"
-              rx="12"
-              ry="16"
-              fill="white"
-              style={{
-                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
-              }}
-            />
-            <circle
-              cx="75"
-              cy="72"
-              r="8"
-              fill={getEyeColor()}
-              style={{ animation: "blink 4s infinite" }}
-            />
-            <circle cx="76" cy="70" r="3" fill="white" />
-
-            {/* Right Eye */}
-            <ellipse
-              cx="125"
-              cy="70"
-              rx="12"
-              ry="16"
-              fill="white"
-              style={{
-                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
-              }}
-            />
-            <circle
-              cx="125"
-              cy="72"
-              r="8"
-              fill={getEyeColor()}
-              style={{ animation: "blink 4s infinite 0.2s" }}
-            />
-            <circle cx="126" cy="70" r="3" fill="white" />
-          </g>
-
-          {/* Eyebrows */}
-          <g stroke="#8b7355" strokeWidth="2" fill="none" strokeLinecap="round">
-            {avatarExpression === "thinking" ? (
-              <>
-                <path d="M 65 55 Q 75 50 85 55" />
-                <path d="M 115 55 Q 125 50 135 55" />
-              </>
-            ) : avatarExpression === "sad" ? (
-              <>
-                <path d="M 65 55 Q 75 60 85 55" />
-                <path d="M 115 55 Q 125 60 135 55" />
-              </>
-            ) : (
-              <>
-                <path d="M 65 55 Q 75 48 85 55" />
-                <path d="M 115 55 Q 125 48 135 55" />
-              </>
-            )}
-          </g>
-
-          {/* Nose */}
-          <path
-            d="M 100 75 L 100 95 L 98 100 M 100 95 L 102 100"
-            stroke="#d4a574"
-            strokeWidth="1.5"
-            fill="none"
-            opacity="0.6"
-          />
-
-          {/* Mouth */}
-          <path
-            d={getMouthPath()}
-            stroke="#c85a54"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-            style={{
-              transition: isSpeaking ? "none" : "d 0.3s ease",
-            }}
-          />
-
-          {/* Lips fill for speaking */}
-          {isSpeaking && (
-            <ellipse
-              cx="100"
-              cy={100 + mouthOpen * 8}
-              rx="8"
-              ry={3 + mouthOpen * 4}
-              fill="#c85a54"
-              opacity="0.3"
-            />
-          )}
-
-          {/* Cheeks */}
-          <circle cx="50" cy="85" r="12" fill="#ff6b6b" opacity="0.2" />
-          <circle cx="150" cy="85" r="12" fill="#ff6b6b" opacity="0.2" />
-
-          {/* Neck */}
-          <rect
-            x="85"
-            y="140"
-            width="30"
-            height="25"
-            fill="#fdbcb4"
-            opacity="0.7"
-          />
-
-          {/* Thinking indicator */}
-          {avatarExpression === "thinking" && (
-            <g>
-              <circle
-                cx="140"
-                cy="30"
-                r="5"
-                fill="#4f46e5"
-                opacity="0.6"
-                style={{
-                  animation: "float 2s ease-in-out infinite",
-                }}
+              <sphereGeometry args={[0.05, 8, 8]} />
+              <meshStandardMaterial 
+                color="#10b981" 
+                emissive="#10b981" 
+                emissiveIntensity={1}
               />
-              <circle
-                cx="155"
-                cy="45"
-                r="3"
-                fill="#4f46e5"
-                opacity="0.4"
-                style={{
-                  animation: "float 2.5s ease-in-out infinite 0.3s",
-                }}
-              />
-            </g>
-          )}
+            </mesh>
+          );
+        })}
+      </group>
+    );
+  };
 
-          {/* Listening indicator */}
-          {isListening && (
-            <g>
-              <circle cx="100" cy="250" r="4" fill="#10b981" opacity="0.8">
-                <animate
-                  attributeName="r"
-                  values="4;8;4"
-                  dur="0.8s"
-                  repeatCount="indefinite"
-                />
-              </circle>
-              <circle
-                cx="100"
-                cy="250"
-                r="10"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="2"
-              >
-                <animate
-                  attributeName="r"
-                  values="10;20;10"
-                  dur="0.8s"
-                  repeatCount="indefinite"
-                />
-                <animate
-                  attributeName="opacity"
-                  values="1;0;1"
-                  dur="0.8s"
-                  repeatCount="indefinite"
-                />
-              </circle>
-            </g>
-          )}
+  // Speaking waves
+  const SpeakingWaves = () => {
+    const wavesRef = useRef([]);
+    
+    useFrame((state) => {
+      wavesRef.current.forEach((wave, i) => {
+        if (wave) {
+          wave.rotation.x = state.clock.getElapsedTime() * (0.5 + i * 0.2);
+          wave.rotation.y = state.clock.getElapsedTime() * (0.3 + i * 0.1);
+        }
+      });
+    });
 
-          {/* Speaking indicator */}
-          {isSpeaking && (
-            <g>
-              <path
-                d="M 160 50 Q 175 70 160 90"
-                stroke="#10b981"
-                strokeWidth="2"
-                fill="none"
-                opacity="0.6"
-              >
-                <animate
-                  attributeName="opacity"
-                  values="0.6;0;0.6"
-                  dur="0.6s"
-                  repeatCount="indefinite"
-                />
-              </path>
-              <path
-                d="M 170 40 Q 190 70 170 100"
-                stroke="#10b981"
-                strokeWidth="2"
-                fill="none"
-                opacity="0.4"
-              >
-                <animate
-                  attributeName="opacity"
-                  values="0.4;0;0.4"
-                  dur="0.8s"
-                  repeatCount="indefinite"
-                />
-              </path>
-            </g>
-          )}
-        </svg>
+    return (
+      <group>
+        {[1.2, 1.6, 2.0].map((radius, i) => (
+          <mesh
+            key={i}
+            ref={(el) => (wavesRef.current[i] = el)}
+            position={[0, 0, 0]}
+          >
+            <torusGeometry args={[radius, 0.03, 16, 100]} />
+            <meshStandardMaterial
+              color="#10b981"
+              transparent
+              opacity={0.4 - i * 0.1}
+              emissive="#10b981"
+              emissiveIntensity={0.5}
+            />
+          </mesh>
+        ))}
+      </group>
+    );
+  };
 
-        <style>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-          }
-        `}</style>
+  // 3D Avatar Scene
+  const RealisticAvatar = () => {
+    return (
+      <div className="flex flex-col justify-center items-center w-full relative">
+        <Canvas
+          camera={{ position: [0, 0, 4], fov: 50 }}
+          className="w-full h-[350px] rounded-2xl"
+          shadows
+        >
+          <PerspectiveCamera makeDefault position={[0, 0, 4]} />
+          
+          {/* Lighting */}
+          <ambientLight intensity={0.6} />
+          <directionalLight 
+            position={[5, 5, 5]} 
+            intensity={0.8} 
+            castShadow 
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+          />
+          <pointLight position={[-5, 3, -5]} intensity={0.4} color="#ffd6a5" />
+          <spotLight 
+            position={[0, 5, 0]} 
+            intensity={0.5} 
+            angle={0.6} 
+            penumbra={1}
+            castShadow
+          />
+
+          {/* Avatar */}
+          <AvatarHead
+            expression={avatarExpression}
+            mouthOpen={mouthOpen}
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+          />
+
+          {/* Effects */}
+          {isListening && <ListeningParticles />}
+          {isSpeaking && <SpeakingWaves />}
+
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            minPolarAngle={Math.PI / 2.5}
+            maxPolarAngle={Math.PI / 1.5}
+            minAzimuthAngle={-Math.PI / 4}
+            maxAzimuthAngle={Math.PI / 4}
+          />
+        </Canvas>
+
+        {/* Status indicators */}
+        {avatarExpression === "thinking" && (
+          <div className="absolute bottom-5 flex gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-bounce" style={{animationDelay: "0s"}} />
+            <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-bounce" style={{animationDelay: "0.2s"}} />
+            <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-bounce" style={{animationDelay: "0.4s"}} />
+          </div>
+        )}
       </div>
     );
   };
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.header}>🎓 AI Virtual Tutor - Bob</h2>
+    <div className="font-sans max-w-7xl mx-auto my-5 p-8 rounded-2xl shadow-xl bg-white">
+      <h2 className="text-center mb-5 text-gray-800 text-3xl font-bold">🎓 AI Virtual Tutor - Bob</h2>
 
       {/* Tab Navigation */}
-      <div style={styles.tabContainer}>
+      <div className="flex gap-1 border-b-2 border-gray-200 mb-5">
         <button
-          style={{
-            ...styles.tab,
-            ...(activeTab === "chat" ? styles.activeTab : {}),
-          }}
+          className={`flex-1 py-3 px-5 bg-transparent border-none border-b-3 cursor-pointer text-base font-medium transition-all ${
+            activeTab === "chat" ? "text-blue-600 border-b-blue-600 font-semibold" : "text-gray-500 border-b-transparent"
+          }`}
           onClick={() => handleTabChange("chat")}
         >
           💬 Chat
         </button>
         <button
-          style={{
-            ...styles.tab,
-            ...(activeTab === "profile" ? styles.activeTab : {}),
-          }}
+          className={`flex-1 py-3 px-5 bg-transparent border-none border-b-3 cursor-pointer text-base font-medium transition-all ${
+            activeTab === "profile" ? "text-blue-600 border-b-blue-600 font-semibold" : "text-gray-500 border-b-transparent"
+          }`}
           onClick={() => handleTabChange("profile")}
         >
           👤 Your Profile
         </button>
         <button
-          style={{
-            ...styles.tab,
-            ...(activeTab === "history" ? styles.activeTab : {}),
-          }}
+          className={`flex-1 py-3 px-5 bg-transparent border-none border-b-3 cursor-pointer text-base font-medium transition-all ${
+            activeTab === "history" ? "text-blue-600 border-b-blue-600 font-semibold" : "text-gray-500 border-b-transparent"
+          }`}
           onClick={() => handleTabChange("history")}
         >
           📚 Learning History
         </button>
         <button
-          style={{
-            ...styles.tab,
-            ...(activeTab === "roadmap" ? styles.activeTab : {}),
-          }}
+          className={`flex-1 py-3 px-5 bg-transparent border-none border-b-3 cursor-pointer text-base font-medium transition-all ${
+            activeTab === "roadmap" ? "text-blue-600 border-b-blue-600 font-semibold" : "text-gray-500 border-b-transparent"
+          }`}
           onClick={() => handleTabChange("roadmap")}
         >
           🗺️ Learning Roadmap
         </button>
-
-
       </div>
 
-      {/* ROADMAP TAB */}
-      {activeTab === "roadmap" && (
-        <div style={styles.profileContainer}>
-          <h3 style={styles.sectionTitle}>🗺️ Personalized Learning Roadmap</h3>
-
-          <input
-            style={styles.input}
-            placeholder="What do you want to learn?"
-            value={roadmapGoal}
-            onChange={(e) => setRoadmapGoal(e.target.value)}
-          />
-
-          <select
-            style={styles.input}
-            value={studyTime}
-            onChange={(e) => setStudyTime(e.target.value)}
-          >
-            <option value="0.5">30 minutes / day</option>
-            <option value="1">1 hour / day</option>
-            <option value="2">2 hours / day</option>
-            <option value="3">3+ hours / day</option>
-          </select>
-
-          <select
-            style={styles.input}
-            value={learningStyle}
-            onChange={(e) => setLearningStyle(e.target.value)}
-          >
-            <option value="visual">Visual</option>
-            <option value="reading">Reading</option>
-            <option value="kinesthetic">Hands-on</option>
-            <option value="auditory">Auditory</option>
-          </select>
-
-          <button onClick={generateRoadmap} style={styles.button}>
-            🚀 Generate Roadmap
-          </button>
-
-          {roadmapLoading && <p>⏳ Generating roadmap...</p>}
-
-          {roadmapResult && roadmapResult.error && (
-            <p style={{ color: "red" }}>{roadmapResult.error}</p>
-          )}
-
-          {roadmapResult && !roadmapResult.error && (
-            <div style={styles.statCard}>
-              <h4>📅 Weekly Plan</h4>
-              <ul>
-                {roadmapResult.weekly_plan.map((week, i) => (
-                  <li key={i}>{week}</li>
-                ))}
-              </ul>
-
-              <h4>🎯 Study Pattern</h4>
-              <p>{roadmapResult.study_pattern}</p>
-
-              <h4>📺 Recommended Resources</h4>
-              <ul>
-                {roadmapResult.resources.map((r, i) => (
-                  <li key={i}>
-                    <a href={r.link} target="_blank" rel="noreferrer">
-                      {r.title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
-
       {/* Tab Content */}
-      <div style={styles.contentArea}>
+      <div className="min-h-[600px]">
         {/* CHAT TAB with Realistic Avatar */}
         {activeTab === "chat" && (
-          <div style={styles.chatLayout}>
+          <div className="grid grid-cols-[380px_1fr] gap-8 items-start">
             {/* Avatar Section */}
-            <div style={styles.avatarSection}>
+            <div className="flex flex-col items-center gap-5 p-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl shadow-lg">
               <RealisticAvatar />
 
               {/* Voice Controls */}
-              <div style={styles.voiceControls}>
+              <div className="flex flex-col gap-2.5 w-full">
                 <button
                   onClick={isListening ? stopListening : startListening}
-                  style={{
-                    ...styles.voiceButton,
-                    background: isListening ? "#ef4444" : "#10b981",
-                  }}
+                  className={`py-3 px-5 border-none rounded-xl text-base font-semibold text-white cursor-pointer transition-all shadow-md ${
+                    isListening ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
+                  }`}
                   disabled={loading || isSpeaking}
                 >
                   {isListening ? "🎤 Listening..." : "🎤 Press to Speak"}
@@ -753,10 +671,7 @@ function App() {
                 {isSpeaking && (
                   <button
                     onClick={stopSpeaking}
-                    style={{
-                      ...styles.voiceButton,
-                      background: "#f59e0b",
-                    }}
+                    className="py-3 px-5 border-none rounded-xl text-base font-semibold text-white cursor-pointer transition-all shadow-md bg-amber-500 hover:bg-amber-600"
                   >
                     ⏹️ Stop Speaking
                   </button>
@@ -764,7 +679,7 @@ function App() {
               </div>
 
               {/* Status */}
-              <div style={styles.statusText}>
+              <div className="text-white text-sm font-medium text-center py-2.5 bg-white/20 rounded-xl min-h-[40px] flex items-center justify-center w-full">
                 {loading && "🤔 Bob is thinking..."}
                 {isSpeaking && "🗣️ Bob is speaking..."}
                 {isListening && "👂 Listening to you..."}
@@ -773,10 +688,13 @@ function App() {
             </div>
 
             {/* Chat Section */}
-            <div style={styles.chatSection}>
-              <div style={styles.chatBox} ref={chatBoxRef}>
+            <div className="flex flex-col h-[600px]">
+              <div 
+                className="flex flex-col gap-3 flex-1 overflow-y-auto border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50"
+                ref={chatBoxRef}
+              >
                 {messages.length === 0 && (
-                  <div style={styles.welcomeMessage}>
+                  <div className="text-center text-gray-400 mt-[200px] text-base">
                     <p>👋 Hi! I'm Bob, your AI tutor.</p>
                     <p>Click the microphone and start speaking!</p>
                   </div>
@@ -785,24 +703,21 @@ function App() {
                 {messages.map((msg, i) => (
                   <div
                     key={i}
-                    style={{
-                      ...styles.messageWrapper,
-                      justifyContent:
-                        msg.sender === "user" ? "flex-end" : "flex-start",
-                    }}
+                    className={`flex w-full ${
+                      msg.sender === "user" ? "justify-end" : "justify-start"
+                    }`}
                   >
                     <div
-                      style={{
-                        ...styles.message,
-                        background:
-                          msg.sender === "user" ? "#0078ff" : "#f1f1f1",
-                        color: msg.sender === "user" ? "white" : "black",
-                      }}
+                      className={`py-3 px-4 rounded-2xl max-w-[75%] break-words text-base leading-relaxed shadow-sm relative ${
+                        msg.sender === "user" 
+                          ? "bg-blue-600 text-white" 
+                          : "bg-gray-100 text-black"
+                      }`}
                     >
                       {msg.sender === "bot" && (
                         <button
                           onClick={() => speakText(msg.text)}
-                          style={styles.speakButton}
+                          className="absolute top-1 right-1 bg-transparent border-none cursor-pointer text-base opacity-70 hover:opacity-100 transition-opacity"
                           title="Hear this response"
                         >
                           🔊
@@ -814,32 +729,28 @@ function App() {
                 ))}
 
                 {loading && (
-                  <div style={styles.loadingWrapper}>
-                    <div style={styles.loadingDots}>
-                      <span style={styles.dot}>●</span>
-                      <span style={styles.dot}>●</span>
-                      <span style={styles.dot}>●</span>
+                  <div className="flex items-center gap-2.5 p-2.5">
+                    <div className="flex gap-1">
+                      <span className="text-xl text-blue-600 animate-bounce">●</span>
+                      <span className="text-xl text-blue-600 animate-bounce" style={{animationDelay: "0.2s"}}>●</span>
+                      <span className="text-xl text-blue-600 animate-bounce" style={{animationDelay: "0.4s"}}>●</span>
                     </div>
                   </div>
                 )}
               </div>
 
-              <form onSubmit={sendQuestion} style={styles.inputArea}>
+              <form onSubmit={sendQuestion} className="flex gap-3">
                 <input
                   type="text"
                   placeholder="Or type your question..."
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  style={styles.input}
+                  className="flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 text-base outline-none focus:border-blue-500"
                   disabled={loading}
                 />
                 <button
                   type="submit"
-                  style={{
-                    ...styles.button,
-                    opacity: loading ? 0.6 : 1,
-                    cursor: loading ? "not-allowed" : "pointer",
-                  }}
+                  className="py-3.5 px-8 bg-blue-600 text-white border-none rounded-xl text-base font-semibold cursor-pointer hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={loading}
                 >
                   {loading ? "⏳" : "Send"}
@@ -851,87 +762,65 @@ function App() {
 
         {/* PROFILE TAB */}
         {activeTab === "profile" && (
-          <div style={styles.profileContainer}>
+          <div className="p-5 overflow-y-auto max-h-[600px]">
             {!studentProfile ? (
-              <div style={styles.loadingCenter}>
+              <div className="text-center p-10 text-gray-600">
                 <p>Loading profile...</p>
               </div>
             ) : studentProfile.error ? (
-              <div style={styles.errorBox}>
+              <div className="bg-red-50 text-red-700 p-5 rounded-xl text-center">
                 <p>❌ {studentProfile.error}</p>
               </div>
             ) : (
               <>
-                <h3 style={styles.sectionTitle}>📊 Your Learning Profile</h3>
+                <h3 className="text-gray-800 mb-5 text-2xl font-bold">📊 Your Learning Profile</h3>
 
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>Total Interactions</div>
-                  <div style={styles.statValue}>
+                <div className="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
+                  <div className="text-sm text-gray-600 mb-1">Total Interactions</div>
+                  <div className="text-2xl font-bold text-blue-600">
                     {studentProfile.total_interactions || 0}
                   </div>
                 </div>
 
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>Learning Since</div>
-                  <div style={styles.statValue}>
+                <div className="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
+                  <div className="text-sm text-gray-600 mb-1">Learning Since</div>
+                  <div className="text-2xl font-bold text-blue-600">
                     {studentProfile.first_interaction
-                      ? new Date(
-                          studentProfile.first_interaction
-                        ).toLocaleDateString()
+                      ? new Date(studentProfile.first_interaction).toLocaleDateString()
                       : "N/A"}
                   </div>
                 </div>
 
-                <h4 style={styles.subTitle}>📚 Topics You've Explored</h4>
-                <div style={styles.topicsContainer}>
+                <h4 className="text-gray-700 mt-6 mb-4 text-xl font-semibold">📚 Topics You've Explored</h4>
+                <div className="flex flex-wrap gap-2.5 mb-5">
                   {studentProfile.topics_discussed &&
                   Object.keys(studentProfile.topics_discussed).length > 0 ? (
                     Object.entries(studentProfile.topics_discussed)
                       .sort((a, b) => b[1] - a[1])
-                      .slice(0, 10)
-                      .map(([topic, count]) => (
-                        <div key={topic} style={styles.topicTag}>
-                          {topic}{" "}
-                          <span style={styles.topicCount}>×{count}</span>
-                        </div>
-                      ))
-                  ) : (
-                    <p style={styles.emptyText}>
-                      No topics yet. Start asking questions!
-                    </p>
-                  )}
-                </div>
-
-                <h4 style={styles.subTitle}>🎯 Question Types</h4>
-                <div style={styles.questionTypes}>
-                  {studentProfile.question_types &&
-                  Object.keys(studentProfile.question_types).length > 0 ? (
-                    Object.entries(studentProfile.question_types)
-                      .sort((a, b) => b[1] - a[1])
                       .map(([type, count]) => (
-                        <div key={type} style={styles.typeRow}>
-                          <span style={styles.typeName}>
+                        <div key={type} className="flex items-center gap-2.5 mb-2.5 w-full">
+                          <span className="flex-[0_0_180px] text-sm text-gray-700">
                             {type
                               .replace(/_/g, " ")
                               .replace(/\b\w/g, (l) => l.toUpperCase())}
                           </span>
-                          <span style={styles.typeBar}>
+                          <span className="flex-1 h-5 bg-gray-200 rounded-xl overflow-hidden">
                             <div
+                              className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-300"
                               style={{
-                                ...styles.typeBarFill,
                                 width: `${(count / studentProfile.total_interactions) * 100}%`,
                               }}
                             />
                           </span>
-                          <span style={styles.typeCount}>{count}</span>
+                          <span className="flex-[0_0_40px] text-right font-bold text-blue-600">{count}</span>
                         </div>
                       ))
                   ) : (
-                    <p style={styles.emptyText}>No data yet.</p>
+                    <p className="text-center text-gray-400 py-10 px-5 text-base">No data yet.</p>
                   )}
                 </div>
 
-                <button onClick={fetchProfile} style={styles.refreshButton}>
+                <button onClick={fetchProfile} className="mt-5 py-2.5 px-5 bg-blue-600 text-white border-none rounded-lg cursor-pointer text-sm font-semibold hover:bg-blue-700 transition-colors">
                   🔄 Refresh Profile
                 </button>
               </>
@@ -941,37 +830,36 @@ function App() {
 
         {/* HISTORY TAB */}
         {activeTab === "history" && (
-          <div style={styles.historyContainer}>
-            <h3 style={styles.sectionTitle}>📚 Your Learning History</h3>
-            <p style={styles.subtitle}>
+          <div className="p-5 overflow-y-auto max-h-[600px]">
+            <h3 className="text-gray-800 mb-5 text-2xl font-bold">📚 Your Learning History</h3>
+            <p className="text-gray-600 text-sm mb-5">
               Recent conversations (showing last 20)
             </p>
 
             {interactions.length === 0 ? (
-              <div style={styles.emptyText}>
+              <div className="text-center text-gray-400 py-10 px-5 text-base">
                 <p>No interactions yet. Start chatting with Bob!</p>
               </div>
             ) : (
-              <div style={styles.interactionsList}>
+              <div className="flex flex-col gap-4">
                 {interactions
                   .slice()
                   .reverse()
                   .map((interaction, idx) => (
-                    <div key={idx} style={styles.interactionCard}>
-                      <div style={styles.timestamp}>
-                        🕒{" "}
-                        {new Date(interaction.timestamp).toLocaleString()}
+                    <div key={idx} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                      <div className="text-xs text-gray-400 mb-2.5">
+                        🕒 {new Date(interaction.timestamp).toLocaleString()}
                       </div>
-                      <div style={styles.interactionQ}>
+                      <div className="mb-2.5 text-sm text-gray-800">
                         <strong>Q:</strong> {interaction.question}
                       </div>
-                      <div style={styles.interactionA}>
+                      <div className="text-sm text-gray-600 mb-2.5 pl-2.5 border-l-3 border-blue-600">
                         <strong>A:</strong> {interaction.answer}
                       </div>
                       {interaction.topics && interaction.topics.length > 0 && (
-                        <div style={styles.interactionTopics}>
+                        <div className="flex gap-1 flex-wrap mt-2.5">
                           {interaction.topics.map((topic, i) => (
-                            <span key={i} style={styles.miniTag}>
+                            <span key={i} className="bg-blue-50 text-blue-600 py-1 px-2.5 rounded-xl text-xs">
                               {topic}
                             </span>
                           ))}
@@ -982,433 +870,90 @@ function App() {
               </div>
             )}
 
-            <button onClick={fetchInteractions} style={styles.refreshButton}>
+            <button onClick={fetchInteractions} className="mt-5 py-2.5 px-5 bg-blue-600 text-white border-none rounded-lg cursor-pointer text-sm font-semibold hover:bg-blue-700 transition-colors">
               🔄 Refresh History
             </button>
-          {/* ROADMAP TAB */}
-          {activeTab === "roadmap" && (
-            <div style={styles.profileContainer}>
-              <h3 style={styles.sectionTitle}>🗺️ Personalized Learning Roadmap</h3>
-
-              <input
-                style={styles.input}
-                placeholder="What do you want to learn?"
-                value={roadmapGoal}
-                onChange={(e) => setRoadmapGoal(e.target.value)}
-              />
-
-              <select
-                style={styles.input}
-                value={studyTime}
-                onChange={(e) => setStudyTime(e.target.value)}
-              >
-                <option value="0.5">30 minutes / day</option>
-                <option value="1">1 hour / day</option>
-                <option value="2">2 hours / day</option>
-              </select>
-
-              <select
-                style={styles.input}
-                value={learningStyle}
-                onChange={(e) => setLearningStyle(e.target.value)}
-              >
-                <option value="visual">Visual</option>
-                <option value="reading">Reading</option>
-                <option value="hands-on">Hands-on</option>
-              </select>
-
-              <button onClick={generateRoadmap} style={styles.button}>
-                🚀 Generate Roadmap
-              </button>
-
-              {roadmapLoading && <p>Generating roadmap...</p>}
-
-              {roadmapResult && !roadmapResult.error && (
-                <div style={styles.statCard}>
-                  <h4>📅 Weekly Plan</h4>
-                  <ul>
-                    {roadmapResult.weekly_plan.map((week, i) => (
-                      <li key={i}>{week}</li>
-                    ))}
-                  </ul>
-
-                  <h4>🎯 Study Pattern</h4>
-                  <p>{roadmapResult.study_pattern}</p>
-
-                  <h4>📺 Recommended Resources</h4>
-                  <ul>
-                    {roadmapResult.resources.map((r, i) => (
-                      <li key={i}>
-                        <a href={r.link} target="_blank" rel="noreferrer">
-                          {r.title}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
-
           </div>
         )}
-        
+
+        {/* ROADMAP TAB */}
+        {activeTab === "roadmap" && (
+          <div className="p-5 overflow-y-auto max-h-[600px]">
+            <h3 className="text-gray-800 mb-5 text-2xl font-bold">🗺️ Personalized Learning Roadmap</h3>
+
+            <input
+              className="flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 text-base outline-none focus:border-blue-500 w-full mb-4"
+              placeholder="What do you want to learn?"
+              value={roadmapGoal}
+              onChange={(e) => setRoadmapGoal(e.target.value)}
+            />
+
+            <select
+              className="flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 text-base outline-none focus:border-blue-500 w-full mb-4"
+              value={studyTime}
+              onChange={(e) => setStudyTime(e.target.value)}
+            >
+              <option value="0.5">30 minutes / day</option>
+              <option value="1">1 hour / day</option>
+              <option value="2">2 hours / day</option>
+              <option value="3">3+ hours / day</option>
+            </select>
+
+            <select
+              className="flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 text-base outline-none focus:border-blue-500 w-full mb-4"
+              value={learningStyle}
+              onChange={(e) => setLearningStyle(e.target.value)}
+            >
+              <option value="visual">Visual</option>
+              <option value="reading">Reading</option>
+              <option value="kinesthetic">Hands-on</option>
+              <option value="auditory">Auditory</option>
+            </select>
+
+            <button 
+              onClick={generateRoadmap} 
+              className="py-3.5 px-8 bg-blue-600 text-white border-none rounded-xl text-base font-semibold cursor-pointer hover:bg-blue-700 transition-colors w-full mb-4"
+            >
+              🚀 Generate Roadmap
+            </button>
+
+            {roadmapLoading && <p className="text-center text-gray-600">⏳ Generating roadmap...</p>}
+
+            {roadmapResult && roadmapResult.error && (
+              <p className="text-red-600 text-center">{roadmapResult.error}</p>
+            )}
+
+            {roadmapResult && !roadmapResult.error && (
+              <div className="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
+                <h4 className="text-lg font-semibold mb-3">📅 Weekly Plan</h4>
+                <ul className="list-disc pl-5 mb-4">
+                  {roadmapResult.weekly_plan.map((week, i) => (
+                    <li key={i} className="mb-2">{week}</li>
+                  ))}
+                </ul>
+
+                <h4 className="text-lg font-semibold mb-3">🎯 Study Pattern</h4>
+                <p className="mb-4">{roadmapResult.study_pattern}</p>
+
+                <h4 className="text-lg font-semibold mb-3">📺 Recommended Resources</h4>
+                <ul className="list-disc pl-5">
+                  {roadmapResult.resources.map((r, i) => (
+                    <li key={i} className="mb-2">
+                      <a href={r.link} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                        {r.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <p style={styles.footer}>
-        
-      </p>
+      <p className="text-center text-xs text-gray-400 mt-5">Powered by AI & React Three Fiber</p>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    maxWidth: "1400px",
-    margin: "20px auto",
-    padding: "30px",
-    borderRadius: "15px",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-    backgroundColor: "white",
-  },
-  header: {
-    textAlign: "center",
-    marginBottom: "20px",
-    color: "#333",
-  },
-  tabContainer: {
-    display: "flex",
-    gap: "5px",
-    borderBottom: "2px solid #e0e0e0",
-    marginBottom: "20px",
-  },
-  tab: {
-    flex: 1,
-    padding: "12px 20px",
-    background: "transparent",
-    border: "none",
-    borderBottom: "3px solid transparent",
-    cursor: "pointer",
-    fontSize: "15px",
-    fontWeight: "500",
-    color: "#666",
-    transition: "all 0.3s",
-  },
-  activeTab: {
-    color: "#0078ff",
-    borderBottomColor: "#0078ff",
-    fontWeight: "600",
-  },
-  contentArea: {
-    minHeight: "600px",
-  },
-  chatLayout: {
-    display: "grid",
-    gridTemplateColumns: "380px 1fr",
-    gap: "30px",
-    alignItems: "start",
-  },
-  avatarContainer: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-  },
-  avatarSection: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "20px",
-    padding: "20px",
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    borderRadius: "20px",
-    boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
-  },
-  voiceControls: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    width: "100%",
-  },
-  voiceButton: {
-    padding: "12px 20px",
-    border: "none",
-    borderRadius: "12px",
-    fontSize: "15px",
-    fontWeight: "600",
-    color: "white",
-    cursor: "pointer",
-    transition: "all 0.3s",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-  },
-  statusText: {
-    color: "white",
-    fontSize: "14px",
-    fontWeight: "500",
-    textAlign: "center",
-    padding: "10px",
-    background: "rgba(255,255,255,0.2)",
-    borderRadius: "10px",
-    minHeight: "40px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-  },
-  chatSection: {
-    display: "flex",
-    flexDirection: "column",
-    height: "600px",
-  },
-  chatBox: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    flex: 1,
-    overflowY: "auto",
-    border: "2px solid #e0e0e0",
-    borderRadius: "12px",
-    padding: "15px",
-    marginBottom: "20px",
-    backgroundColor: "#f9f9f9",
-  },
-  welcomeMessage: {
-    textAlign: "center",
-    color: "#999",
-    marginTop: "200px",
-    fontSize: "16px",
-  },
-  messageWrapper: {
-    display: "flex",
-    width: "100%",
-  },
-  message: {
-    padding: "12px 18px",
-    borderRadius: "18px",
-    maxWidth: "75%",
-    wordWrap: "break-word",
-    fontSize: "15px",
-    lineHeight: "1.5",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-    position: "relative",
-  },
-  speakButton: {
-    position: "absolute",
-    top: "5px",
-    right: "5px",
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "16px",
-    opacity: 0.7,
-    transition: "opacity 0.2s",
-  },
-  loadingWrapper: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "10px",
-  },
-  loadingDots: {
-    display: "flex",
-    gap: "4px",
-  },
-  dot: {
-    fontSize: "20px",
-    color: "#0078ff",
-    animation: "bounce 1.4s infinite ease-in-out",
-  },
-  inputArea: {
-    display: "flex",
-    gap: "12px",
-  },
-  input: {
-    flex: 1,
-    padding: "14px",
-    borderRadius: "10px",
-    border: "2px solid #e0e0e0",
-    fontSize: "15px",
-    outline: "none",
-  },
-  button: {
-    padding: "14px 30px",
-    background: "#0078ff",
-    color: "white",
-    border: "none",
-    borderRadius: "10px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
-  profileContainer: {
-    padding: "20px",
-    overflowY: "auto",
-    maxHeight: "600px",
-  },
-  sectionTitle: {
-    color: "#333",
-    marginBottom: "20px",
-  },
-  statCard: {
-    background: "#f8f9fa",
-    padding: "15px",
-    borderRadius: "10px",
-    marginBottom: "15px",
-    border: "1px solid #e0e0e0",
-  },
-  statLabel: {
-    fontSize: "13px",
-    color: "#666",
-    marginBottom: "5px",
-  },
-  statValue: {
-    fontSize: "24px",
-    fontWeight: "bold",
-    color: "#0078ff",
-  },
-  subTitle: {
-    color: "#555",
-    marginTop: "25px",
-    marginBottom: "15px",
-  },
-  topicsContainer: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px",
-    marginBottom: "20px",
-  },
-  topicTag: {
-    background: "#e3f2fd",
-    color: "#0078ff",
-    padding: "8px 15px",
-    borderRadius: "20px",
-    fontSize: "14px",
-    fontWeight: "500",
-  },
-  topicCount: {
-    fontWeight: "bold",
-    marginLeft: "5px",
-  },
-  questionTypes: {
-    marginBottom: "20px",
-  },
-  typeRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginBottom: "10px",
-  },
-  typeName: {
-    flex: "0 0 180px",
-    fontSize: "14px",
-    color: "#555",
-  },
-  typeBar: {
-    flex: 1,
-    height: "20px",
-    background: "#e0e0e0",
-    borderRadius: "10px",
-    overflow: "hidden",
-  },
-  typeBarFill: {
-    height: "100%",
-    background: "linear-gradient(90deg, #0078ff, #00b4ff)",
-    transition: "width 0.3s",
-  },
-  typeCount: {
-    flex: "0 0 40px",
-    textAlign: "right",
-    fontWeight: "bold",
-    color: "#0078ff",
-  },
-  historyContainer: {
-    padding: "20px",
-    overflowY: "auto",
-    maxHeight: "600px",
-  },
-  subtitle: {
-    color: "#666",
-    fontSize: "14px",
-    marginBottom: "20px",
-  },
-  interactionsList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-  },
-  interactionCard: {
-    background: "#f8f9fa",
-    padding: "15px",
-    borderRadius: "10px",
-    border: "1px solid #e0e0e0",
-  },
-  timestamp: {
-    fontSize: "12px",
-    color: "#999",
-    marginBottom: "10px",
-  },
-  interactionQ: {
-    marginBottom: "10px",
-    fontSize: "14px",
-    color: "#333",
-  },
-  interactionA: {
-    fontSize: "14px",
-    color: "#555",
-    marginBottom: "10px",
-    paddingLeft: "10px",
-    borderLeft: "3px solid #0078ff",
-  },
-  interactionTopics: {
-    display: "flex",
-    gap: "5px",
-    flexWrap: "wrap",
-    marginTop: "10px",
-  },
-  miniTag: {
-    background: "#e3f2fd",
-    color: "#0078ff",
-    padding: "4px 10px",
-    borderRadius: "12px",
-    fontSize: "12px",
-  },
-  refreshButton: {
-    marginTop: "20px",
-    padding: "10px 20px",
-    background: "#0078ff",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: "600",
-  },
-  emptyText: {
-    textAlign: "center",
-    color: "#999",
-    padding: "40px 20px",
-    fontSize: "15px",
-  },
-  loadingCenter: {
-    textAlign: "center",
-    padding: "40px",
-    color: "#666",
-  },
-  errorBox: {
-    background: "#ffebee",
-    color: "#c62828",
-    padding: "20px",
-    borderRadius: "10px",
-    textAlign: "center",
-  },
-  footer: {
-    textAlign: "center",
-    fontSize: "12px",
-    color: "#999",
-    marginTop: "20px",
-  },
-};
 
 export default App;

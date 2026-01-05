@@ -515,5 +515,41 @@
     "complexity": 0,
     "learning_styles": [],
     "question_type": "statement"
+  },
+  {
+    "timestamp": "2026-01-05T10:29:18.501242",
+    "question": "hi",
+    "answer": "Hey Pranav!  Great to hear from you again! Ready to tackle something new today? Whether you want to revisit the basics like saying \"hello\" or \"what's up,\" dive deeper into Gemini concepts, or even explore Javajust let me know what sparks your curiosity! Im here to guide you step by step, at your pace. What would you like to learn first?",
+    "topics": [],
+    "complexity": 0,
+    "learning_styles": [],
+    "question_type": "statement"
+  },
+  {
+    "timestamp": "2026-01-05T10:30:00.841893",
+    "question": "hi",
+    "answer": "Hey Pranav!  It's wonderful to hear from you again! How's your day going? What can I help you explore or learn today? Whether its diving into something new, reviewing a topic like Gemini, or even sorting out basics like JavaIm all ears and ready to break it down step by step! Just let me know what youd like to tackle. ",
+    "topics": [],
+    "complexity": 0,
+    "learning_styles": [],
+    "question_type": "statement"
+  },
+  {
+    "timestamp": "2026-01-05T10:41:07.465357",
+    "question": "hi",
+    "answer": "Hey Pranav!  Great to see you again! What would you like to learn or explore today? Im here to help you with *anything*whether its coding, fun facts, or just chatting. Just let me know whats on your mind!   \n\n*(P.S. If youre curious, I remember youve been exploring topics like \"gemini\" beforewant to dive deeper, or try something totally new?)*",
+    "topics": [],
+    "complexity": 0,
+    "learning_styles": [],
+    "question_type": "statement"
+  },
+  {
+    "timestamp": "2026-01-05T10:52:15.671221",
+    "question": "hii",
+    "answer": "Hey there!  Its awesome to meet you! Hows your day going? Im Bob, your AI tutor, and Im here to help you learn in a way that feels natural and fun for *you*. Since youre an auditory learner, Ill break things down step by step with clear explanationslike Im chatting with you right now!  \n\nWhat would you like to explore today? Maybe we could start with something light, like brushing up on the basics of **Java** (if thats what you meant by \"java\"), or diving deeper into **Gemini** since youre already strong there? Or maybe youd rather try a quick practice problem? Let me know what sparks your curiosityIm all ears!   \n\nP.S. No pressure at all! Well take it slow and make it work for you. ",
+    "topics": [],
+    "complexity": 0,
+    "learning_styles": [],
+    "question_type": "statement"
   }
 ]
