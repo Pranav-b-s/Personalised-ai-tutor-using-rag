@@ -3,6 +3,7 @@ import axios from "axios";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
+import "./avatar.css";
 
 function App() {
   const [question, setQuestion] = useState("");
@@ -12,13 +13,6 @@ function App() {
   const [studentProfile, setStudentProfile] = useState(null);
   const [interactions, setInteractions] = useState([]);
   const chatBoxRef = useRef(null);
-  
-  // Roadmap states
-  const [roadmapGoal, setRoadmapGoal] = useState("");
-  const [studyTime, setStudyTime] = useState("1");
-  const [learningStyle, setLearningStyle] = useState("visual");
-  const [roadmapLoading, setRoadmapLoading] = useState(false);
-  const [roadmapResult, setRoadmapResult] = useState(null);
 
   // Voice and Avatar states
   const [isListening, setIsListening] = useState(false);
@@ -95,7 +89,7 @@ function App() {
     }
 
     const interval = setInterval(() => {
-      setMouthOpen((prev) => {
+      setMouthOpen(() => {
         const variation = Math.sin(Date.now() / 100) * 0.5 + 0.5;
         return variation;
       });
@@ -254,37 +248,6 @@ function App() {
     }
   };
 
-  const generateRoadmap = async () => {
-    if (!roadmapGoal.trim()) {
-      alert("Please enter a learning goal");
-      return;
-    }
-
-    setRoadmapLoading(true);
-    setRoadmapResult(null);
-
-    try {
-      const res = await axios.post(
-        "http://127.0.0.1:5000/learning-roadmap",
-        {
-          goal: roadmapGoal,
-          time_per_day: studyTime,
-          learning_style: learningStyle,
-        },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      setRoadmapResult(res.data);
-    } catch (err) {
-      console.error("Roadmap error:", err);
-      setRoadmapResult({ error: "Failed to generate roadmap" });
-    } finally {
-      setRoadmapLoading(false);
-    }
-  };
-
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     stopSpeaking();
@@ -293,6 +256,8 @@ function App() {
       fetchProfile();
     } else if (tab === "history") {
       fetchInteractions();
+    } else if (tab === "roadmap") {
+      window.location.href = "/roadmap.html";
     }
   };
 
@@ -307,7 +272,6 @@ function App() {
     useFrame((state) => {
       const time = state.clock.getElapsedTime();
       
-      // Blink animation
       blinkTimeRef.current += 0.016;
       if (blinkTimeRef.current > 3) {
         const blinkProgress = (blinkTimeRef.current - 3) / 0.15;
@@ -322,7 +286,6 @@ function App() {
         }
       }
 
-      // Head movements
       if (headRef.current) {
         if (expression === "thinking") {
           headRef.current.rotation.z = -0.1 + Math.sin(time * 0.5) * 0.05;
@@ -336,7 +299,6 @@ function App() {
         }
       }
 
-      // Mouth animation
       if (mouthRef.current && isSpeaking) {
         mouthRef.current.scale.y = 0.3 + mouthOpen * 0.7;
       } else if (mouthRef.current) {
@@ -349,13 +311,11 @@ function App() {
 
     return (
       <group ref={headRef}>
-        {/* Head */}
         <mesh position={[0, 0, 0]} castShadow>
           <sphereGeometry args={[1, 32, 32]} />
           <meshStandardMaterial color={skinColor} roughness={0.8} metalness={0.1} />
         </mesh>
 
-        {/* Ears */}
         <mesh position={[-0.95, 0, 0]} rotation={[0, 0, Math.PI / 6]} castShadow>
           <sphereGeometry args={[0.25, 16, 16]} />
           <meshStandardMaterial color="#ffcba4" roughness={0.9} />
@@ -365,7 +325,6 @@ function App() {
           <meshStandardMaterial color="#ffcba4" roughness={0.9} />
         </mesh>
 
-        {/* Eyes - Left */}
         <group position={[-0.3, 0.2, 0.8]}>
           <mesh>
             <sphereGeometry args={[0.15, 16, 16]} />
@@ -381,7 +340,6 @@ function App() {
           </mesh>
         </group>
 
-        {/* Eyes - Right */}
         <group position={[0.3, 0.2, 0.8]}>
           <mesh>
             <sphereGeometry args={[0.15, 16, 16]} />
@@ -397,7 +355,6 @@ function App() {
           </mesh>
         </group>
 
-        {/* Eyebrows */}
         <mesh position={[-0.3, 0.38, 0.75]} rotation={[0, 0, expression === "thinking" ? -0.2 : expression === "sad" ? 0.2 : 0.1]}>
           <boxGeometry args={[0.25, 0.05, 0.05]} />
           <meshStandardMaterial color="#8b7355" />
@@ -407,13 +364,11 @@ function App() {
           <meshStandardMaterial color="#8b7355" />
         </mesh>
 
-        {/* Nose */}
         <mesh position={[0, 0, 0.95]} rotation={[Math.PI, 0, 0]}>
           <coneGeometry args={[0.1, 0.3, 8]} />
           <meshStandardMaterial color="#ffcba4" roughness={0.8} />
         </mesh>
 
-        {/* Mouth */}
         <mesh ref={mouthRef} position={[0, -0.25, 0.85]}>
           <sphereGeometry args={[0.15, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <meshStandardMaterial 
@@ -423,7 +378,6 @@ function App() {
           />
         </mesh>
 
-        {/* Cheeks (blush) */}
         {(expression === "happy" || isSpeaking) && (
           <>
             <mesh position={[-0.6, -0.1, 0.6]}>
@@ -437,25 +391,21 @@ function App() {
           </>
         )}
 
-        {/* Neck */}
         <mesh position={[0, -1.2, 0]} castShadow>
           <cylinderGeometry args={[0.35, 0.4, 0.5, 16]} />
           <meshStandardMaterial color={skinColor} roughness={0.8} />
         </mesh>
 
-        {/* Shirt */}
         <mesh position={[0, -1.8, 0]} castShadow>
           <cylinderGeometry args={[0.75, 0.9, 1.2, 16]} />
           <meshStandardMaterial color="#3b82f6" roughness={0.7} />
         </mesh>
 
-        {/* Shirt Collar */}
         <mesh position={[0, -1.4, 0.3]} rotation={[0.3, 0, 0]} castShadow>
           <boxGeometry args={[0.6, 0.15, 0.1]} />
           <meshStandardMaterial color="#2563eb" roughness={0.6} />
         </mesh>
 
-        {/* Shirt Buttons */}
         {[0, -0.3, -0.6].map((yOffset, i) => (
           <mesh key={i} position={[0, -1.5 + yOffset, 0.72]}>
             <sphereGeometry args={[0.05, 8, 8]} />
@@ -463,7 +413,6 @@ function App() {
           </mesh>
         ))}
 
-        {/* Hair */}
         <mesh position={[0, 0.6, -0.1]} castShadow>
           <sphereGeometry args={[0.9, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <meshStandardMaterial color="#3d2817" roughness={0.95} />
@@ -472,7 +421,6 @@ function App() {
     );
   };
 
-  // Listening particles
   const ListeningParticles = () => {
     const particlesRef = useRef();
     
@@ -509,7 +457,6 @@ function App() {
     );
   };
 
-  // Speaking waves
   const SpeakingWaves = () => {
     const wavesRef = useRef([]);
     
@@ -544,18 +491,16 @@ function App() {
     );
   };
 
-  // 3D Avatar Scene
   const RealisticAvatar = () => {
     return (
-      <div className="flex flex-col justify-center items-center w-full relative">
+      <div className="avatar-container">
         <Canvas
           camera={{ position: [0, 0, 4], fov: 50 }}
-          className="w-full h-[350px] rounded-2xl"
+          className="avatar-canvas"
           shadows
         >
           <PerspectiveCamera makeDefault position={[0, 0, 4]} />
           
-          {/* Lighting */}
           <ambientLight intensity={0.6} />
           <directionalLight 
             position={[5, 5, 5]} 
@@ -573,7 +518,6 @@ function App() {
             castShadow
           />
 
-          {/* Avatar */}
           <AvatarHead
             expression={avatarExpression}
             mouthOpen={mouthOpen}
@@ -581,7 +525,6 @@ function App() {
             isSpeaking={isSpeaking}
           />
 
-          {/* Effects */}
           {isListening && <ListeningParticles />}
           {isSpeaking && <SpeakingWaves />}
 
@@ -595,12 +538,11 @@ function App() {
           />
         </Canvas>
 
-        {/* Status indicators */}
         {avatarExpression === "thinking" && (
-          <div className="absolute bottom-5 flex gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-bounce" style={{animationDelay: "0s"}} />
-            <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-bounce" style={{animationDelay: "0.2s"}} />
-            <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-bounce" style={{animationDelay: "0.4s"}} />
+          <div className="thinking-indicator">
+            <div className="dot" style={{animationDelay: "0s"}} />
+            <div className="dot" style={{animationDelay: "0.2s"}} />
+            <div className="dot" style={{animationDelay: "0.4s"}} />
           </div>
         )}
       </div>
@@ -608,61 +550,47 @@ function App() {
   };
 
   return (
-    <div className="font-sans max-w-7xl mx-auto my-5 p-8 rounded-2xl shadow-xl bg-white">
-      <h2 className="text-center mb-5 text-gray-800 text-3xl font-bold">🎓 AI Virtual Tutor - Bob</h2>
+    <div className="app-wrapper">
+      <nav className="navbar">
+        <h1 className="navbar-title">🎓 AI Virtual Tutor - Bob</h1>
+        <div className="tab-navigation">
+          <button
+            className={`tab-button ${activeTab === "chat" ? "active" : ""}`}
+            onClick={() => handleTabChange("chat")}
+          >
+            💬 Chat
+          </button>
+          <button
+            className={`tab-button ${activeTab === "profile" ? "active" : ""}`}
+            onClick={() => handleTabChange("profile")}
+          >
+            👤 Profile
+          </button>
+          <button
+            className={`tab-button ${activeTab === "history" ? "active" : ""}`}
+            onClick={() => handleTabChange("history")}
+          >
+            📚 History
+          </button>
+          <button
+            className={`tab-button ${activeTab === "roadmap" ? "active" : ""}`}
+            onClick={() => handleTabChange("roadmap")}
+          >
+            🗺️ Roadmap
+          </button>
+        </div>
+      </nav>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 border-b-2 border-gray-200 mb-5">
-        <button
-          className={`flex-1 py-3 px-5 bg-transparent border-none border-b-3 cursor-pointer text-base font-medium transition-all ${
-            activeTab === "chat" ? "text-blue-600 border-b-blue-600 font-semibold" : "text-gray-500 border-b-transparent"
-          }`}
-          onClick={() => handleTabChange("chat")}
-        >
-          💬 Chat
-        </button>
-        <button
-          className={`flex-1 py-3 px-5 bg-transparent border-none border-b-3 cursor-pointer text-base font-medium transition-all ${
-            activeTab === "profile" ? "text-blue-600 border-b-blue-600 font-semibold" : "text-gray-500 border-b-transparent"
-          }`}
-          onClick={() => handleTabChange("profile")}
-        >
-          👤 Your Profile
-        </button>
-        <button
-          className={`flex-1 py-3 px-5 bg-transparent border-none border-b-3 cursor-pointer text-base font-medium transition-all ${
-            activeTab === "history" ? "text-blue-600 border-b-blue-600 font-semibold" : "text-gray-500 border-b-transparent"
-          }`}
-          onClick={() => handleTabChange("history")}
-        >
-          📚 Learning History
-        </button>
-        <button
-          className={`flex-1 py-3 px-5 bg-transparent border-none border-b-3 cursor-pointer text-base font-medium transition-all ${
-            activeTab === "roadmap" ? "text-blue-600 border-b-blue-600 font-semibold" : "text-gray-500 border-b-transparent"
-          }`}
-          onClick={() => handleTabChange("roadmap")}
-        >
-          🗺️ Learning Roadmap
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      <div className="min-h-[600px]">
-        {/* CHAT TAB with Realistic Avatar */}
+      <div className="main-content">
         {activeTab === "chat" && (
-          <div className="grid grid-cols-[380px_1fr] gap-8 items-start">
-            {/* Avatar Section */}
-            <div className="flex flex-col items-center gap-5 p-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl shadow-lg">
+          <div className="chat-layout">
+            <aside className="avatar-sidebar">
               <RealisticAvatar />
 
-              {/* Voice Controls */}
-              <div className="flex flex-col gap-2.5 w-full">
+              <div className="voice-controls">
                 <button
                   onClick={isListening ? stopListening : startListening}
-                  className={`py-3 px-5 border-none rounded-xl text-base font-semibold text-white cursor-pointer transition-all shadow-md ${
-                    isListening ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"
-                  }`}
+                  className={`control-button ${isListening ? "listening" : ""}`}
                   disabled={loading || isSpeaking}
                 >
                   {isListening ? "🎤 Listening..." : "🎤 Press to Speak"}
@@ -671,30 +599,25 @@ function App() {
                 {isSpeaking && (
                   <button
                     onClick={stopSpeaking}
-                    className="py-3 px-5 border-none rounded-xl text-base font-semibold text-white cursor-pointer transition-all shadow-md bg-amber-500 hover:bg-amber-600"
+                    className="control-button stop-speaking"
                   >
                     ⏹️ Stop Speaking
                   </button>
                 )}
               </div>
 
-              {/* Status */}
-              <div className="text-white text-sm font-medium text-center py-2.5 bg-white/20 rounded-xl min-h-[40px] flex items-center justify-center w-full">
+              <div className="status-display">
                 {loading && "🤔 Bob is thinking..."}
                 {isSpeaking && "🗣️ Bob is speaking..."}
                 {isListening && "👂 Listening to you..."}
                 {!loading && !isSpeaking && !isListening && "💬 Ready to help!"}
               </div>
-            </div>
+            </aside>
 
-            {/* Chat Section */}
-            <div className="flex flex-col h-[600px]">
-              <div 
-                className="flex flex-col gap-3 flex-1 overflow-y-auto border-2 border-gray-200 rounded-xl p-4 mb-5 bg-gray-50"
-                ref={chatBoxRef}
-              >
+            <div className="chat-area">
+              <div className="chat-messages" ref={chatBoxRef}>
                 {messages.length === 0 && (
-                  <div className="text-center text-gray-400 mt-[200px] text-base">
+                  <div className="empty-chat">
                     <p>👋 Hi! I'm Bob, your AI tutor.</p>
                     <p>Click the microphone and start speaking!</p>
                   </div>
@@ -703,21 +626,13 @@ function App() {
                 {messages.map((msg, i) => (
                   <div
                     key={i}
-                    className={`flex w-full ${
-                      msg.sender === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    className={`message-wrapper ${msg.sender}`}
                   >
-                    <div
-                      className={`py-3 px-4 rounded-2xl max-w-[75%] break-words text-base leading-relaxed shadow-sm relative ${
-                        msg.sender === "user" 
-                          ? "bg-blue-600 text-white" 
-                          : "bg-gray-100 text-black"
-                      }`}
-                    >
+                    <div className={`message ${msg.sender}`}>
                       {msg.sender === "bot" && (
                         <button
                           onClick={() => speakText(msg.text)}
-                          className="absolute top-1 right-1 bg-transparent border-none cursor-pointer text-base opacity-70 hover:opacity-100 transition-opacity"
+                          className="speak-button"
                           title="Hear this response"
                         >
                           🔊
@@ -729,28 +644,26 @@ function App() {
                 ))}
 
                 {loading && (
-                  <div className="flex items-center gap-2.5 p-2.5">
-                    <div className="flex gap-1">
-                      <span className="text-xl text-blue-600 animate-bounce">●</span>
-                      <span className="text-xl text-blue-600 animate-bounce" style={{animationDelay: "0.2s"}}>●</span>
-                      <span className="text-xl text-blue-600 animate-bounce" style={{animationDelay: "0.4s"}}>●</span>
-                    </div>
+                  <div className="loading-indicator">
+                    <span className="loading-dot">●</span>
+                    <span className="loading-dot">●</span>
+                    <span className="loading-dot">●</span>
                   </div>
                 )}
               </div>
 
-              <form onSubmit={sendQuestion} className="flex gap-3">
+              <form onSubmit={sendQuestion} className="chat-input-form">
                 <input
                   type="text"
                   placeholder="Or type your question..."
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  className="flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 text-base outline-none focus:border-blue-500"
+                  className="chat-input"
                   disabled={loading}
                 />
                 <button
                   type="submit"
-                  className="py-3.5 px-8 bg-blue-600 text-white border-none rounded-xl text-base font-semibold cursor-pointer hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="send-button"
                   disabled={loading}
                 >
                   {loading ? "⏳" : "Send"}
@@ -760,67 +673,58 @@ function App() {
           </div>
         )}
 
-        {/* PROFILE TAB */}
         {activeTab === "profile" && (
-          <div className="p-5 overflow-y-auto max-h-[600px]">
+          <div className="tab-content">
             {!studentProfile ? (
-              <div className="text-center p-10 text-gray-600">
-                <p>Loading profile...</p>
-              </div>
+              <div className="loading-state">Loading profile...</div>
             ) : studentProfile.error ? (
-              <div className="bg-red-50 text-red-700 p-5 rounded-xl text-center">
-                <p>❌ {studentProfile.error}</p>
-              </div>
+              <div className="error-state">❌ {studentProfile.error}</div>
             ) : (
               <>
-                <h3 className="text-gray-800 mb-5 text-2xl font-bold">📊 Your Learning Profile</h3>
+                <h3 className="section-title">📊 Your Learning Profile</h3>
 
-                <div className="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
-                  <div className="text-sm text-gray-600 mb-1">Total Interactions</div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {studentProfile.total_interactions || 0}
-                  </div>
+                <div className="stat-card">
+                  <div className="stat-label">Total Interactions</div>
+                  <div className="stat-value">{studentProfile.total_interactions || 0}</div>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
-                  <div className="text-sm text-gray-600 mb-1">Learning Since</div>
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="stat-card">
+                  <div className="stat-label">Learning Since</div>
+                  <div className="stat-value">
                     {studentProfile.first_interaction
                       ? new Date(studentProfile.first_interaction).toLocaleDateString()
                       : "N/A"}
                   </div>
                 </div>
 
-                <h4 className="text-gray-700 mt-6 mb-4 text-xl font-semibold">📚 Topics You've Explored</h4>
-                <div className="flex flex-wrap gap-2.5 mb-5">
+                <h4 className="subsection-title">📚 Topics You've Explored</h4>
+                <div className="topics-list">
                   {studentProfile.topics_discussed &&
                   Object.keys(studentProfile.topics_discussed).length > 0 ? (
                     Object.entries(studentProfile.topics_discussed)
                       .sort((a, b) => b[1] - a[1])
                       .map(([type, count]) => (
-                        <div key={type} className="flex items-center gap-2.5 mb-2.5 w-full">
-                          <span className="flex-[0_0_180px] text-sm text-gray-700">
-                            {type
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                        <div key={type} className="topic-item">
+                          <span className="topic-name">
+                            {type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                           </span>
-                          <span className="flex-1 h-5 bg-gray-200 rounded-xl overflow-hidden">
+                          <div className="progress-bar">
                             <div
-                              className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-300"
+                              className="progress-fill"
                               style={{
                                 width: `${(count / studentProfile.total_interactions) * 100}%`,
                               }}
                             />
-                          </span>
-                          <span className="flex-[0_0_40px] text-right font-bold text-blue-600">{count}</span>
+                          </div>
+                          <span className="topic-count">{count}</span>
                         </div>
                       ))
                   ) : (
-                    <p className="text-center text-gray-400 py-10 px-5 text-base">No data yet.</p>
+                    <p className="empty-state">No data yet.</p>
                   )}
                 </div>
 
-                <button onClick={fetchProfile} className="mt-5 py-2.5 px-5 bg-blue-600 text-white border-none rounded-lg cursor-pointer text-sm font-semibold hover:bg-blue-700 transition-colors">
+                <button onClick={fetchProfile} className="refresh-button">
                   🔄 Refresh Profile
                 </button>
               </>
@@ -828,130 +732,46 @@ function App() {
           </div>
         )}
 
-        {/* HISTORY TAB */}
         {activeTab === "history" && (
-          <div className="p-5 overflow-y-auto max-h-[600px]">
-            <h3 className="text-gray-800 mb-5 text-2xl font-bold">📚 Your Learning History</h3>
-            <p className="text-gray-600 text-sm mb-5">
-              Recent conversations (showing last 20)
-            </p>
+          <div className="tab-content">
+            <h3 className="section-title">📚 Your Learning History</h3>
+            <p className="section-subtitle">Recent conversations (showing last 20)</p>
 
             {interactions.length === 0 ? (
-              <div className="text-center text-gray-400 py-10 px-5 text-base">
-                <p>No interactions yet. Start chatting with Bob!</p>
-              </div>
+              <div className="empty-state">No interactions yet. Start chatting with Bob!</div>
             ) : (
-              <div className="flex flex-col gap-4">
-                {interactions
-                  .slice()
-                  .reverse()
-                  .map((interaction, idx) => (
-                    <div key={idx} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                      <div className="text-xs text-gray-400 mb-2.5">
-                        🕒 {new Date(interaction.timestamp).toLocaleString()}
-                      </div>
-                      <div className="mb-2.5 text-sm text-gray-800">
-                        <strong>Q:</strong> {interaction.question}
-                      </div>
-                      <div className="text-sm text-gray-600 mb-2.5 pl-2.5 border-l-3 border-blue-600">
-                        <strong>A:</strong> {interaction.answer}
-                      </div>
-                      {interaction.topics && interaction.topics.length > 0 && (
-                        <div className="flex gap-1 flex-wrap mt-2.5">
-                          {interaction.topics.map((topic, i) => (
-                            <span key={i} className="bg-blue-50 text-blue-600 py-1 px-2.5 rounded-xl text-xs">
-                              {topic}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+              <div className="history-list">
+                {interactions.slice().reverse().map((interaction, idx) => (
+                  <div key={idx} className="history-item">
+                    <div className="history-timestamp">
+                      🕒 {new Date(interaction.timestamp).toLocaleString()}
                     </div>
-                  ))}
+                    <div className="history-question">
+                      <strong>Q:</strong> {interaction.question}
+                    </div>
+                    <div className="history-answer">
+                      <strong>A:</strong> {interaction.answer}
+                    </div>
+                    {interaction.topics && interaction.topics.length > 0 && (
+                      <div className="history-topics">
+                        {interaction.topics.map((topic, i) => (
+                          <span key={i} className="topic-tag">{topic}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
-            <button onClick={fetchInteractions} className="mt-5 py-2.5 px-5 bg-blue-600 text-white border-none rounded-lg cursor-pointer text-sm font-semibold hover:bg-blue-700 transition-colors">
+            <button onClick={fetchInteractions} className="refresh-button">
               🔄 Refresh History
             </button>
           </div>
         )}
-
-        {/* ROADMAP TAB */}
-        {activeTab === "roadmap" && (
-          <div className="p-5 overflow-y-auto max-h-[600px]">
-            <h3 className="text-gray-800 mb-5 text-2xl font-bold">🗺️ Personalized Learning Roadmap</h3>
-
-            <input
-              className="flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 text-base outline-none focus:border-blue-500 w-full mb-4"
-              placeholder="What do you want to learn?"
-              value={roadmapGoal}
-              onChange={(e) => setRoadmapGoal(e.target.value)}
-            />
-
-            <select
-              className="flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 text-base outline-none focus:border-blue-500 w-full mb-4"
-              value={studyTime}
-              onChange={(e) => setStudyTime(e.target.value)}
-            >
-              <option value="0.5">30 minutes / day</option>
-              <option value="1">1 hour / day</option>
-              <option value="2">2 hours / day</option>
-              <option value="3">3+ hours / day</option>
-            </select>
-
-            <select
-              className="flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 text-base outline-none focus:border-blue-500 w-full mb-4"
-              value={learningStyle}
-              onChange={(e) => setLearningStyle(e.target.value)}
-            >
-              <option value="visual">Visual</option>
-              <option value="reading">Reading</option>
-              <option value="kinesthetic">Hands-on</option>
-              <option value="auditory">Auditory</option>
-            </select>
-
-            <button 
-              onClick={generateRoadmap} 
-              className="py-3.5 px-8 bg-blue-600 text-white border-none rounded-xl text-base font-semibold cursor-pointer hover:bg-blue-700 transition-colors w-full mb-4"
-            >
-              🚀 Generate Roadmap
-            </button>
-
-            {roadmapLoading && <p className="text-center text-gray-600">⏳ Generating roadmap...</p>}
-
-            {roadmapResult && roadmapResult.error && (
-              <p className="text-red-600 text-center">{roadmapResult.error}</p>
-            )}
-
-            {roadmapResult && !roadmapResult.error && (
-              <div className="bg-gray-50 p-4 rounded-xl mb-4 border border-gray-200">
-                <h4 className="text-lg font-semibold mb-3">📅 Weekly Plan</h4>
-                <ul className="list-disc pl-5 mb-4">
-                  {roadmapResult.weekly_plan.map((week, i) => (
-                    <li key={i} className="mb-2">{week}</li>
-                  ))}
-                </ul>
-
-                <h4 className="text-lg font-semibold mb-3">🎯 Study Pattern</h4>
-                <p className="mb-4">{roadmapResult.study_pattern}</p>
-
-                <h4 className="text-lg font-semibold mb-3">📺 Recommended Resources</h4>
-                <ul className="list-disc pl-5">
-                  {roadmapResult.resources.map((r, i) => (
-                    <li key={i} className="mb-2">
-                      <a href={r.link} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                        {r.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      <p className="text-center text-xs text-gray-400 mt-5">Powered by AI & React Three Fiber</p>
+      <footer className="footer">Powered by AI & React Three Fiber</footer>
     </div>
   );
 }

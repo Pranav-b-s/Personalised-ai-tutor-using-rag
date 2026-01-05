@@ -744,7 +744,7 @@ def clean_text(text):
 # --- OpenRouter setup ---
 OPENROUTER_API_KEY = os.getenv(
     "OPENROUTER_API_KEY", 
-    "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"
+    "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"
 )
 MODEL = "allenai/olmo-3.1-32b-think:free"
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
