@@ -12,6 +12,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 from dotenv import load_dotenv
 
+from anthropic import Anthropic
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -927,6 +929,293 @@ Remember: Adapt your response based on the student profile above. Be natural and
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+    
+
+
+def load_json_file(filename):
+    """Load JSON file safely"""
+    try:
+        if os.path.exists(filename):
+            with open(filename, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading {filename}: {e}")
+    return None
+
+def format_accepted_courses(courses_data):
+    """Format accepted courses for LLM context"""
+    if not courses_data or 'roadmaps' not in courses_data:
+        return ""
+    
+    roadmaps = courses_data['roadmaps']
+    if not roadmaps:
+        return ""
+    
+    context = "\n\n📚 **Student's Active Learning Roadmaps:**\n"
+    for idx, roadmap in enumerate(roadmaps, 1):
+        context += f"\n{idx}. **{roadmap.get('topic', 'Unknown Topic')}**\n"
+        context += f"   - Duration: {roadmap.get('duration', 'N/A')} {roadmap.get('timeline', 'weeks')}s\n"
+        context += f"   - Progress: {roadmap.get('completed_tasks', 0)}/{roadmap.get('total_tasks', 0)} tasks completed\n"
+        
+        if 'phases' in roadmap:
+            context += f"   - Phases:\n"
+            for phase_idx, phase in enumerate(roadmap['phases'], 1):
+                context += f"     Phase {phase_idx}: {phase.get('name', 'Unnamed Phase')}\n"
+                if 'tasks' in phase:
+                    completed_count = sum(1 for task in phase['tasks'] if task.get('completed', False))
+                    total_count = len(phase['tasks'])
+                    context += f"       Tasks: {completed_count}/{total_count} completed\n"
+                    
+                    # Show recent incomplete tasks
+                    incomplete_tasks = [t for t in phase['tasks'] if not t.get('completed', False)]
+                    if incomplete_tasks:
+                        context += f"       Current tasks:\n"
+                        for task in incomplete_tasks[:3]:  # Show first 3 incomplete tasks
+                            context += f"         - {task.get('name', 'Unnamed task')}\n"
+    
+    return context
+
+def format_student_interactions(interactions_data):
+    """Format student interactions for LLM context"""
+    if not interactions_data or 'interactions' not in interactions_data:
+        return ""
+    
+    interactions = interactions_data['interactions']
+    if not interactions:
+        return ""
+    
+    # Get last 10 interactions for context
+    recent_interactions = interactions[-10:] if len(interactions) > 10 else interactions
+    
+    context = "\n\n💬 **Recent Learning Interactions:**\n"
+    for idx, interaction in enumerate(recent_interactions, 1):
+        question = interaction.get('question', 'No question')
+        answer_preview = interaction.get('answer', '')[:150]  # First 150 chars
+        timestamp = interaction.get('timestamp', 'Unknown time')
+        
+        context += f"\n{idx}. [{timestamp}]\n"
+        context += f"   Q: {question}\n"
+        context += f"   A: {answer_preview}...\n"
+        
+        # Add analysis if available
+        if 'analysis' in interaction:
+            analysis = interaction['analysis']
+            if 'topic' in analysis:
+                context += f"   Topic: {analysis['topic']}\n"
+            if 'difficulty' in analysis:
+                context += f"   Difficulty: {analysis['difficulty']}\n"
+    
+    # Add topic summary
+    topics_discussed = {}
+    for interaction in interactions:
+        if 'analysis' in interaction and 'topic' in interaction['analysis']:
+            topic = interaction['analysis']['topic']
+            topics_discussed[topic] = topics_discussed.get(topic, 0) + 1
+    
+    if topics_discussed:
+        context += "\n\n📊 **Topics Discussed:**\n"
+        sorted_topics = sorted(topics_discussed.items(), key=lambda x: x[1], reverse=True)
+        for topic, count in sorted_topics[:5]:  # Top 5 topics
+            context += f"   - {topic}: {count} questions\n"
+    
+    return context
+
+def ask_openrouter(messages):
+    """Send request to OpenRouter API with RAG context"""
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "AI Tutor"
+    }
+    payload = {
+        "model": MODEL,
+        "messages": messages,
+        "stream": False
+    }
+    try:
+        resp = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+    except requests.exceptions.RequestException as e:
+        print(f"API Error: {e}")
+        raise
+
+
+def build_learning_roadmap(goal, time_per_day, learning_style, analytics):
+    """
+    Generate adaptive learning roadmap
+    """
+    time_per_day = float(time_per_day)
+
+    # Duration adapts to time commitment
+    weeks = 2 if time_per_day >= 3 else 3 if time_per_day >= 1.5 else 4
+
+    weak_topics = analytics["knowledge"]["weak_topics"]
+    strong_topics = analytics["knowledge"]["strong_topics"]
+
+    weekly_plan = []
+
+    for i in range(weeks):
+        if i == 0:
+            weekly_plan.append(
+                f"Week 1: Fundamentals of {goal} "
+                f"(focus on basics and weak areas: {', '.join(weak_topics) if weak_topics else 'core concepts'})"
+            )
+        elif i == weeks - 1:
+            weekly_plan.append(
+                f"Week {i+1}: Mini project + revision + self-assessment"
+            )
+        else:
+            weekly_plan.append(
+                f"Week {i+1}: Intermediate concepts of {goal} "
+                f"(build on strengths: {', '.join(strong_topics) if strong_topics else 'general practice'})"
+            )
+
+    # Study pattern adapts to learning style
+    if learning_style == "visual":
+        study_pattern = "Watch videos → draw diagrams → summarize visually"
+    elif learning_style == "kinesthetic":
+        study_pattern = "Learn concept → practice → build small exercises"
+    elif learning_style == "auditory":
+        study_pattern = "Listen → explain aloud → revise"
+    else:
+        study_pattern = "Read → take notes → revise next day"
+
+    resources = [
+        {
+            "title": f"{goal} Full Course",
+            "link": f"https://www.youtube.com/results?search_query={goal}+full+course"
+        },
+        {
+            "title": f"{goal} Practice",
+            "link": f"https://www.google.com/search?q={goal}+practice+problems"
+        },
+        {
+            "title": f"{goal} Documentation",
+            "link": f"https://www.google.com/search?q={goal}+documentation"
+        }
+    ]
+
+    return {
+        "goal": goal,
+        "weeks": weeks,
+        "time_per_day": time_per_day,
+        "learning_style": learning_style,
+        "weekly_plan": weekly_plan,
+        "study_pattern": study_pattern,
+        "resources": resources,
+        "generated_at": datetime.now().isoformat()
+    }
+
+
+
+# --- Routes ---
+@app.route('/ask', methods=['POST'])
+def ask():
+    """Handle chatbot questions with real-time adaptive learning"""
+    data = request.get_json(force=True, silent=True)
+    user_message = data.get("question", "").strip()
+    
+    if not user_message:
+        return jsonify({"error": "No question provided"}), 400
+    
+    print(f"\n📝 Question: {user_message}")
+    
+    try:
+        # STEP 1: Load accepted courses
+        accepted_courses = load_json_file('accepted_courses.json')
+        courses_context = format_accepted_courses(accepted_courses)
+        
+        # STEP 2: Analyze question in real-time
+        analysis = student_model.analyze_question(user_message)
+        print(f"🔍 Analysis: {analysis}")
+        
+        # STEP 3: Get adaptive context
+        adaptive_context = student_model.generate_adaptive_context()
+        
+        # STEP 4: Find similar past interactions (RAG)
+        similar_interactions = student_model.find_similar_interactions(user_message)
+        
+        # STEP 5: Search dataset
+        dataset_results = dataset_retriever.search(user_message)
+        dataset_context = ""
+        if dataset_results:
+            dataset_context = "\n\n📚 Relevant dataset information:\n"
+            for res in dataset_results:
+                summary = ", ".join(f"{k}: {v}" for k, v in list(res["data"].items())[:3])
+                dataset_context += f"- {summary}\n"
+        
+        # STEP 6: Build RAG context
+        rag_context = ""
+        if similar_interactions:
+            rag_context = "\n\n💭 Previous related discussions:\n"
+            for i, sim in enumerate(similar_interactions, 1):
+                rag_context += f"{i}. Q: {sim['question']}\n   A: {sim['answer'][:100]}...\n"
+        
+        # STEP 6: Build enhanced prompt with courses and adaptive context
+        enhanced_profile = f"""{base_chatbot_profile}
+
+{adaptive_context}
+
+{courses_context}
+
+{rag_context}
+
+{dataset_context}
+
+**Instructions:**
+- You have access to the student's active learning roadmaps and can discuss their progress, suggest next steps, or clarify any tasks
+- If the student asks about their courses, roadmaps, or progress, use the information provided above
+- If they ask about specific tasks or phases, provide detailed guidance
+- Connect new questions to their active courses when relevant
+- Adapt your response based on the student profile above
+- Be natural, conversational, and supportive
+
+Remember: Adapt your response based on the student profile above. Be natural and conversational."""
+        
+        messages = [
+            {"role": "system", "content": enhanced_profile},
+            {"role": "user", "content": user_message}
+        ]
+        
+        # STEP 7: Get AI response
+        answer = ask_openrouter(messages)
+        cleaned_answer = clean_text(answer)
+        
+        # STEP 8: Store interaction with analytics
+        student_model.add_interaction(user_message, cleaned_answer, analysis)
+        
+        # STEP 9: Get analytics summary
+        analytics_summary = student_model.get_analytics_summary()
+        
+        print(f"✅ Response generated with adaptive learning")
+        print(f"📊 Learning Style: {analytics_summary['learning_style']['dominant']}")
+        print(f"💡 Engagement: {analytics_summary['engagement']['level']}")
+        print(f"🧠 Cognitive Load: {analytics_summary['cognitive_load']['average_complexity']:.2f}")
+        print(f"📚 Active Courses: {len(accepted_courses.get('roadmaps', [])) if accepted_courses else 0}")
+        
+        return jsonify({
+            "answer": cleaned_answer,
+            "analytics": analytics_summary,
+            "similar_count": len(similar_interactions),
+            "total_interactions": student_model.student_profile["total_interactions"],
+            "analysis": analysis,
+            "active_courses": len(accepted_courses.get('roadmaps', [])) if accepted_courses else 0
+        })
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+    
+####---------------------------fron here student profile begins--------------------
+
+
 
 @app.route('/student-profile', methods=['GET'])
 def get_student_profile():
@@ -1187,4 +1476,447 @@ if __name__ == '__main__':
     print("   • GET /learning-insights - Actionable insights")
     print("   • GET /teaching-strategy - Current strategy")
     print("\n")
+
+
+
+####################################################################################################
+# Initialize Anthropic client
+client = OPENROUTER_API_KEY
+####################################################################################################
+# Roadmap Generation Setup
+####################################################################################################
+
+# File paths for roadmap
+STUDENT_INTERACTION_FILE = "student_interactions.json"
+ACCEPTED_ROADMAPS_FILE = "accepted_courses.json"
+
+# Helper Functions for Roadmap
+def load_json_file_roadmap(filepath):
+    """Load JSON file or return empty structure"""
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, 'r') as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_json_file_roadmap(filepath, data):
+    """Save data to JSON file"""
+    with open(filepath, 'w') as f:
+        json.dump(data, f, indent=2)
+
+def get_student_history_roadmap():
+    """Get student interaction history for roadmap"""
+    return load_json_file_roadmap(STUDENT_INTERACTION_FILE)
+
+def analyze_learning_pattern_roadmap(history):
+    """Analyze student's learning pattern from history"""
+    if not history:
+        return "No previous learning history available."
+    
+    # Extract patterns
+    topics_studied = []
+    interaction_times = []
+    
+    for interaction in history[-20:]:  # Last 20 interactions
+        if 'question' in interaction:
+            topics_studied.append(interaction.get('question', ''))
+        if 'timestamp' in interaction:
+            interaction_times.append(interaction['timestamp'])
+    
+    pattern_summary = f"""
+    Previous Topics: {', '.join(set(topics_studied[:5]))}
+    Recent Activity: {len(interaction_times)} interactions
+    Learning Style: Based on history, student prefers {'detailed explanations' if len(topics_studied) > 10 else 'concise overviews'}
+    """
+    
+    return pattern_summary
+
+def generate_roadmap_with_openrouter(topic, timeline, duration, history_analysis, modification_data=None):
+    """Generate or modify roadmap using OpenRouter API"""
+    
+    if modification_data:
+        current_roadmap = modification_data.get('current_roadmap', {})
+        modification_request = modification_data.get('modification_request', '')
+        
+        prompt = f"""You are an expert learning advisor. Modify the following roadmap based on the user's request.
+
+Modification Request: {modification_request}
+
+Current Roadmap: {json.dumps(current_roadmap, indent=2)}
+
+Return ONLY a valid JSON object with the modified roadmap maintaining the same structure.
+Ensure deadlines are updated appropriately and total_tasks is recalculated."""
+    else:
+        prompt = f"""You are an expert learning advisor. Create a detailed study roadmap for the topic: "{topic}"
+
+Timeline: {duration} {timeline}s
+Student Learning Pattern: {history_analysis}
+
+Create a comprehensive roadmap that:
+1. Breaks down the topic into logical phases/modules
+2. Each phase should have specific tasks with descriptions
+3. Include estimated time for each task
+4. Consider the student's learning pattern
+5. Make it achievable within the given timeline
+
+Return ONLY a valid JSON object with this exact structure (no markdown, no extra text):
+{{
+  "topic": "{topic}",
+  "timeline": "{timeline}",
+  "duration": {duration},
+  "total_tasks": 0,
+  "phases": [
+    {{
+      "name": "Phase name",
+      "timeline": "Timeline for this phase",
+      "tasks": [
+        {{
+          "name": "Task name",
+          "description": "Detailed description",
+          "estimated_time": "Time needed"
+        }}
+      ]
+    }}
+  ]
+}}
+
+Calculate total_tasks as the sum of all tasks across phases.
+Return ONLY the JSON, nothing else."""
+
+    try:
+        # Use OpenRouter API
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "AI Tutor Roadmap"
+        }
+        
+        payload = {
+            "model": MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False
+        }
+        
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+        data = response.json()
+
+        response_text = data["choices"][0]["message"]["content"]
+
+    # Strip markdown + junk safely
+        response_text = response_text.strip()
+        response_text = response_text.replace("```json", "").replace("```", "")
+
+        start = response_text.find("{")
+        end = response_text.rfind("}") + 1
+
+        if start == -1 or end <= start:
+            print("❌ No JSON found in model response")
+            print(response_text[:500])
+            return None
+
+        try:
+            roadmap = json.loads(response_text[start:end])
+        except json.JSONDecodeError as e:
+            print("❌ JSON decode failed")
+            print(response_text[start:end][:500])
+            return None
+
+        
+        
+        # Add deadlines to tasks if not modifying
+        if not modification_data:
+            start_date = datetime.now()
+            task_counter = 0
+            
+            for phase in roadmap.get('phases', []):
+                for task in phase.get('tasks', []):
+                    if timeline == 'day':
+                        deadline = start_date + timedelta(days=task_counter + 1)
+                    elif timeline == 'week':
+                        deadline = start_date + timedelta(weeks=task_counter + 1)
+                    else:  # month
+                        deadline = start_date + timedelta(days=(task_counter + 1) * 30)
+                    
+                    task['deadline'] = deadline.isoformat()
+                    task['completed'] = False
+                    task_counter += 1
+            
+            # Calculate total tasks
+            roadmap['total_tasks'] = sum(len(phase.get('tasks', [])) for phase in roadmap.get('phases', []))
+            roadmap['created_at'] = datetime.now().isoformat()
+            roadmap['completed_tasks'] = 0
+        
+        return roadmap
+        
+    except requests.exceptions.RequestException as e:
+        print(f"❌ API Error generating roadmap: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON parsing error: {e}")
+        print(f"Response text: {response_text[:500]}")
+        return None
+    except Exception as e:
+        print(f"❌ Error generating roadmap: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+@app.route('/generate-roadmap', methods=['POST'])
+def generate_roadmap():
+    try:
+        data = request.get_json(force=True, silent=True)
+
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid or missing JSON body'
+            }), 400
+
+        topic = data.get('topic')
+        timeline = data.get('timeline', 'week')
+        duration = int(data.get('duration', 4))
+
+        if not topic:
+            return jsonify({
+                'success': False,
+                'error': 'Topic is required'
+            }), 400
+
+        print(f"📝 Generating roadmap for: {topic}")
+
+        history = get_student_history_roadmap()
+        pattern_analysis = analyze_learning_pattern_roadmap(history)
+
+        roadmap = generate_roadmap_with_openrouter(
+            topic, timeline, duration, pattern_analysis
+        )
+
+        if not roadmap or not isinstance(roadmap, dict):
+            return jsonify({
+                'success': False,
+                'error': 'AI failed to generate a valid roadmap'
+            }), 500
+
+        print(f"✅ Roadmap generated with {roadmap.get('total_tasks', 0)} tasks")
+
+        return jsonify({
+            'success': True,
+            'roadmap': roadmap
+        })
+
+    except Exception as e:
+        print("❌ generate_roadmap error:", e)
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/modify-roadmap', methods=['POST'])
+def modify_roadmap():
+    """Modify an existing roadmap"""
+    try:
+        data = request.json
+        current_roadmap = data.get('roadmap')
+        modification_request = data.get('modification_request')
+        
+        if not current_roadmap or not modification_request:
+            return jsonify({'success': False, 'error': 'Roadmap and modification request are required'}), 400
+        
+        print(f"✏️ Modifying roadmap: {modification_request}")
+        
+        # Get student history
+        history = get_student_history_roadmap()
+        pattern_analysis = analyze_learning_pattern_roadmap(history)
+        
+        # Prepare modification data
+        modification_data = {
+            'current_roadmap': current_roadmap,
+            'modification_request': modification_request,
+            'pattern_analysis': pattern_analysis
+        }
+        
+        # Generate modified roadmap
+        modified_roadmap = generate_roadmap_with_openrouter(
+            current_roadmap.get('topic', ''),
+            current_roadmap.get('timeline', 'week'),
+            current_roadmap.get('duration', 4),
+            pattern_analysis,
+            modification_data=modification_data
+        )
+        
+        if modified_roadmap:
+            modified_roadmap['modified_at'] = datetime.now().isoformat()
+            print(f"✅ Roadmap modified successfully")
+            return jsonify({'success': True, 'roadmap': modified_roadmap})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to modify roadmap'}), 500
+            
+    except Exception as e:
+        print(f"❌ Error in modify_roadmap: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/accept-roadmap', methods=['POST'])
+def accept_roadmap():
+    """Accept and save roadmap to accepted_courses.json"""
+    try:
+        data = request.json
+        roadmap = data.get('roadmap')
+        
+        if not roadmap:
+            return jsonify({'success': False, 'error': 'Roadmap is required'}), 400
+        
+        # Load existing roadmaps
+        roadmaps = load_json_file_roadmap(ACCEPTED_ROADMAPS_FILE)
+        
+        # Add accepted timestamp
+        roadmap['accepted_at'] = datetime.now().isoformat()
+        roadmap['status'] = 'active'
+        
+        # Add to list
+        roadmaps.append(roadmap)
+        
+        # Save
+        save_json_file_roadmap(ACCEPTED_ROADMAPS_FILE, roadmaps)
+        
+        print(f"✅ Roadmap accepted and saved: {roadmap.get('topic')}")
+        return jsonify({'success': True, 'message': 'Roadmap saved successfully'})
+        
+    except Exception as e:
+        print(f"❌ Error in accept_roadmap: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/accepted-roadmaps', methods=['GET'])
+def get_accepted_roadmaps():
+    """Get all accepted roadmaps"""
+    try:
+        roadmaps = load_json_file_roadmap(ACCEPTED_ROADMAPS_FILE)
+        active_roadmaps = [rm for rm in roadmaps if rm.get('status') == 'active']
+        return jsonify({'roadmaps': active_roadmaps})
+    except Exception as e:
+        print(f"❌ Error getting accepted roadmaps: {e}")
+        return jsonify({'roadmaps': []}), 500
+
+@app.route('/check-progress', methods=['GET'])
+def check_progress():
+    """Check if any task is due for progress update"""
+    try:
+        roadmaps = load_json_file_roadmap(ACCEPTED_ROADMAPS_FILE)
+        now = datetime.now()
+        
+        for roadmap in roadmaps:
+            if roadmap.get('status') != 'active':
+                continue
+                
+            for phase in roadmap.get('phases', []):
+                for task in phase.get('tasks', []):
+                    if task.get('completed'):
+                        continue
+                    
+                    deadline_str = task.get('deadline', '')
+                    if not deadline_str:
+                        continue
+                    
+                    try:
+                        deadline = datetime.fromisoformat(deadline_str)
+                        
+                        # Check if task is overdue or due today
+                        if now >= deadline:
+                            return jsonify({
+                                'task_due': True,
+                                'task': task,
+                                'roadmap_id': roadmap.get('topic')
+                            })
+                    except:
+                        continue
+        
+        return jsonify({'task_due': False})
+        
+    except Exception as e:
+        print(f"❌ Error checking progress: {e}")
+        return jsonify({'task_due': False}), 500
+
+@app.route('/update-progress', methods=['POST'])
+def update_progress():
+    """Update task progress"""
+    try:
+        data = request.json
+        task = data.get('task')
+        completed = data.get('completed', False)
+        
+        if not task:
+            return jsonify({'success': False, 'error': 'Task is required'}), 400
+        
+        roadmaps = load_json_file_roadmap(ACCEPTED_ROADMAPS_FILE)
+        
+        # Find and update the task
+        task_found = False
+        for roadmap in roadmaps:
+            for phase in roadmap.get('phases', []):
+                for t in phase.get('tasks', []):
+                    if t.get('name') == task.get('name'):
+                        t['completed'] = completed
+                        t['completed_at'] = datetime.now().isoformat() if completed else None
+                        
+                        if completed:
+                            roadmap['completed_tasks'] = roadmap.get('completed_tasks', 0) + 1
+                        
+                        task_found = True
+                        break
+                if task_found:
+                    break
+            if task_found:
+                break
+        
+        # If not completed, log adjustment suggestion
+        if not completed and task_found:
+            print(f"⚠️ Task not completed: {task.get('name')}")
+            print(f"💡 Suggestion: Review the task breakdown and consider extending the timeline")
+        
+        save_json_file_roadmap(ACCEPTED_ROADMAPS_FILE, roadmaps)
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"❌ Error updating progress: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+####################################################################################################
+# Start Flask App
+####################################################################################################
+
+if __name__ == '__main__':
+    print("🚀 Starting Enhanced AI Tutor with Real-Time Adaptive Learning...")
+    print(f"📊 Loaded {len(student_model.interactions)} previous interactions")
+    print(f"📁 Data stored in: {os.path.abspath('student_data.json')}")
+    print("\n🎯 NEW FEATURES:")
+    print("   ✓ Learning style detection")
+    print("   ✓ Cognitive load tracking")
+    print("   ✓ Engagement analysis")
+    print("   ✓ Knowledge graph")
+    print("   ✓ Personality adaptation")
+    print("   ✓ Real-time teaching strategy adjustment")
+    print("   ✓ Personalized study roadmap generation")
+    print("\n📡 API Endpoints:")
+    print("   • POST /ask - Ask questions (with adaptive learning)")
+    print("   • GET /learning-analytics - Detailed analytics")
+    print("   • GET /knowledge-graph - Topic mastery")
+    print("   • GET /learning-insights - Actionable insights")
+    print("   • GET /teaching-strategy - Current strategy")
+    print("   • POST /generate-roadmap - Generate study roadmap")
+    print("   • POST /modify-roadmap - Modify existing roadmap")
+    print("   • POST /accept-roadmap - Accept and save roadmap")
+    print("   • GET /accepted-roadmaps - Get all accepted roadmaps")
+    print("   • GET /check-progress - Check task progress")
+    print("   • POST /update-progress - Update task completion")
+    print("\n✅ Server starting on http://127.0.0.1:5000\n")
+    
     app.run(host='127.0.0.1', port=5000, debug=True)

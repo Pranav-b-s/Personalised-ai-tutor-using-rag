@@ -1,0 +1,284 @@
+[
+  {
+    "completed_tasks": 0,
+    "created_at": "2026-01-06T11:23:28.742870",
+    "duration": 4,
+    "phases": [
+      {
+        "name": "Java Fundamentals & Syntax",
+        "tasks": [
+          {
+            "completed": false,
+            "deadline": "2026-01-13T11:44:28.742786",
+            "description": "Install JDK (Java Development Kit), configure a Java IDE (IntelliJ or Eclipse), and create a basic Hello World program to verify the setup.",
+            "estimated_time": "1 hours",
+            "name": "Environment Setup"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-01-20T11:23:28.742786",
+            "description": "Learn Java syntax rules, primitive/non-primitive data types (int, double, String), operators (arithmetic, comparison), and basic input-output operations.",
+            "estimated_time": "3 hours",
+            "name": "Basic Syntax & Data Types"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-01-27T11:23:28.742786",
+            "description": "Practice using conditional structures (if-else, switch-case) and looping constructs (for, while, do-while) for program flow management.",
+            "estimated_time": "2.5 hours",
+            "name": "Control Flow Statements"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-02-03T11:23:28.742786",
+            "description": "Understand Java arrays (declaration, initialization, traversal) and method structures (defining parameters, return types, scope).",
+            "estimated_time": "2 hours",
+            "name": "Arrays & Methods"
+          }
+        ],
+        "timeline": "Week 1"
+      },
+      {
+        "name": "Object-Oriented Programming Concepts",
+        "tasks": [
+          {
+            "completed": false,
+            "deadline": "2026-02-10T11:23:28.742786",
+            "description": "Create classes, instantiate objects, define constructors, and understand field/method access using 'this' keyword.",
+            "estimated_time": "3 hours",
+            "name": "Classes & Objects"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-02-17T11:23:28.742786",
+            "description": "Implement inheritance hierarchies (extends keyword), method overriding, abstract classes, and interface implementation.",
+            "estimated_time": "2.5 hours",
+            "name": "Inheritance & Interfaces"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-02-24T11:23:28.742786",
+            "description": "Apply runtime polymorphism principles, encapsulation techniques (private fields, getters/setters), and static modifiers.",
+            "estimated_time": "2.5 hours",
+            "name": "Polymorphism & Encapsulation"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-03-03T11:23:28.742786",
+            "description": "Organize code using packages, understand access control levels (public, private, protected), and import external libraries.",
+            "estimated_time": "1.5 hours",
+            "name": "Packages & Access Modifiers"
+          }
+        ],
+        "timeline": "Week 2"
+      },
+      {
+        "name": "Core Java APIs & Error Handling",
+        "tasks": [
+          {
+            "completed": false,
+            "deadline": "2026-03-10T11:23:28.742786",
+            "description": "Manage runtime errors using try-catch blocks, create custom exceptions, and apply finally/throws clauses.",
+            "estimated_time": "2.5 hours",
+            "name": "Exception Handling"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-03-17T11:23:28.742786",
+            "description": "Implement List (ArrayList), Set (HashSet), and Map (HashMap) interfaces with generics for type-safe collections.",
+            "estimated_time": "3 hours",
+            "name": "Collections Framework"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-03-24T11:23:28.742786",
+            "description": "Explore core String methods (concat, slice, format), StringBuilder for mutable operations, and text parsing techniques.",
+            "estimated_time": "2 hours",
+            "name": "String Manipulation"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-03-31T11:23:28.742786",
+            "description": "Create threads via Thread/Runnable, synchronize shared resources, and understand thread lifecycle states.",
+            "estimated_time": "2 hours",
+            "name": "Multithreading Basics"
+          }
+        ],
+        "timeline": "Week 3"
+      },
+      {
+        "name": "Intermediate Applications & Integration",
+        "tasks": [
+          {
+            "completed": false,
+            "deadline": "2026-04-07T11:23:28.742786",
+            "description": "Read/write text files using FileReader/FileWriter, binary streams, and leverage BufferedReader/PrintWriter utilities.",
+            "estimated_time": "2.5 hours",
+            "name": "File I/O Operations"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-04-14T11:23:28.742786",
+            "description": "Establish JDBC connections, execute CRUD operations via SQL statements, and handle database exceptions.",
+            "estimated_time": "3 hours",
+            "name": "JDBC Database Connectivity"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-04-21T11:23:28.742786",
+            "description": "Set up Maven/Gradle projects, manage dependencies via POM/build.gradle files, and compile using CLI/build tools.",
+            "estimated_time": "1.5 hours",
+            "name": "Build Tools & Libraries"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-04-28T11:23:28.742786",
+            "description": "Create basic Swing interfaces (JFrame, JButton) or JavaFX scenes with simple event handling mechanisms.",
+            "estimated_time": "2 hours",
+            "name": "GUI Development Introduction"
+          }
+        ],
+        "timeline": "Week 4"
+      }
+    ],
+    "timeline": "week",
+    "topic": "java",
+    "total_tasks": 16,
+    "accepted_at": "2026-01-06T11:23:40.392307",
+    "status": "active"
+  },
+  {
+    "completed_tasks": 0,
+    "created_at": "2026-01-06T12:17:35.822221",
+    "duration": 4,
+    "phases": [
+      {
+        "name": "Fundamentals & Linear Structures",
+        "tasks": [
+          {
+            "completed": false,
+            "deadline": "2026-01-13T12:17:35.822111",
+            "description": "Learn core concepts: definition, importance in programming, abstract data types (ADT) vs. implementation, and time complexity basics. Includes memory allocation principles.",
+            "estimated_time": "1 hour",
+            "name": "Introduction to Data Structures"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-01-20T12:17:35.822111",
+            "description": "Study static/dynamic arrays, operations (access, insertion, deletion), multidimensional arrays, and practical implementation examples with complexity analysis.",
+            "estimated_time": "2 hours",
+            "name": "Arrays Deep Dive"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-01-27T12:17:35.822111",
+            "description": "Cover singly/doubly linked lists: structure, node operations, traversal, edge-case handling, and comparisons with arrays. Implement insert/delete at positions.",
+            "estimated_time": "2 hours",
+            "name": "Linked Lists"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-02-03T12:17:35.822111",
+            "description": "Learn stack operations (push/pop), LIFO principle, array vs. linked list implementations, and real-world use-cases like function call stacks.",
+            "estimated_time": "1.5 hours",
+            "name": "Stacks"
+          }
+        ],
+        "timeline": "Week 1"
+      },
+      {
+        "name": "Queues & Hierarchical Structures",
+        "tasks": [
+          {
+            "completed": false,
+            "deadline": "2026-02-10T12:17:35.822111",
+            "description": "Understand FIFO principle, circular queues, priority queues implementation, enqueue/dequeue operations with array and linked list backends.",
+            "estimated_time": "1.5 hours",
+            "name": "Queues"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-02-17T12:17:35.822111",
+            "description": "Study tree terminology (root, leaf, height), binary trees, properties, and traversal algorithms (pre-order, in-order, post-order) with recursive/iterative approaches.",
+            "estimated_time": "2 hours",
+            "name": "Tree Fundamentals"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-02-24T12:17:35.822111",
+            "description": "Implement BST operations: search, insertion, deletion. Analyze balance concepts and worst-case scenarios leading to degenerate trees.",
+            "estimated_time": "2 hours",
+            "name": "Binary Search Trees"
+          }
+        ],
+        "timeline": "Week 2"
+      },
+      {
+        "name": "Complex Structures & Hashing",
+        "tasks": [
+          {
+            "completed": false,
+            "deadline": "2026-03-03T12:17:35.822111",
+            "description": "Explore self-balancing with AVL rotations (LL, LR, RR, RL). Learn binary heaps: min-heap/max-heap properties and heapify operations.",
+            "estimated_time": "2.5 hours",
+            "name": "AVL Trees & Heaps"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-03-10T12:17:35.822111",
+            "description": "Study hash functions, collision resolution (separate chaining, open addressing), load factor impact, and practical use-cases for fast lookups.",
+            "estimated_time": "2 hours",
+            "name": "Hash Tables"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-03-17T12:17:35.822111",
+            "description": "Learn tries for string operations, structure design, prefix searching, and applications like autocomplete systems.",
+            "estimated_time": "1 hour",
+            "name": "Trie Structures"
+          }
+        ],
+        "timeline": "Week 3"
+      },
+      {
+        "name": "Graphs & Integration",
+        "tasks": [
+          {
+            "completed": false,
+            "deadline": "2026-03-24T12:17:35.822111",
+            "description": "Cover terminology (vertices, edges), adjacency matrix vs. list trade-offs, directed/undirected graphs, and weighted graphs representations.",
+            "estimated_time": "1.5 hours",
+            "name": "Graph Representations"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-03-31T12:17:35.822111",
+            "description": "Implement BFS (queue-based) and DFS (stack/recursion) with path analysis. Compare use-cases like shortest path vs. connectivity checks.",
+            "estimated_time": "2 hours",
+            "name": "Graph Traversals"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-04-07T12:17:35.822111",
+            "description": "Build a mini-project (e.g., contactbook using Trie/HashTable or social network with BFS). Document design choices and complexity.",
+            "estimated_time": "2 hours",
+            "name": "Project Implementation"
+          },
+          {
+            "completed": false,
+            "deadline": "2026-04-14T12:17:35.822111",
+            "description": "Create comparison tables of all data structures: strengths, weaknesses, and operation complexities. Solve mixed-problem sets to reinforce concepts.",
+            "estimated_time": "1.5 hours",
+            "name": "Comprehensive Review"
+          }
+        ],
+        "timeline": "Week 4"
+      }
+    ],
+    "timeline": "week",
+    "topic": "data structure",
+    "total_tasks": 14,
+    "accepted_at": "2026-01-06T12:17:52.272481",
+    "status": "active"
+  }
+]

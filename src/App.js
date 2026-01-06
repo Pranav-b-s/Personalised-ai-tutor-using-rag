@@ -456,89 +456,103 @@ function App() {
 
   // Initialize Speech Recognition
   useEffect(() => {
-    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = "en-US";
+  if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = false;  // ✅ NEW - better control
+    recognitionRef.current.interimResults = true;
+    recognitionRef.current.lang = "en-US";
 
-      recognitionRef.current.onstart = () => {
-        setIsListening(true);
-        setAvatarExpression("listening");
-      };
+    recognitionRef.current.onstart = () => {
+      setIsListening(true);
+      setAvatarExpression("listening");
+    };
+recognitionRef.current.onresult = (event) => {
+      let finalText = "";
 
-      recognitionRef.current.onresult = (event) => {
-        let finalText = "";
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalText += transcript + " ";
-          }
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalText += transcript + " ";
         }
-
-        if (finalText.trim()) {
-          setQuestion(finalText.trim());
-          lastSpeechTimeRef.current = Date.now();
-        }
-      };
-
-
-      recognitionRef.current.onerror = () => {
-        setIsListening(false);
-        setAvatarExpression("neutral");
-      };
-
-      recognitionRef.current.onend = () => {
-        if (isListening) {
-          try {
-            recognitionRef.current.start(); // 🔥 auto-restart
-          } catch (e) {
-            console.warn("Recognition restart failed", e);
-          }
-        }
-      };
-
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
       }
-      synthRef.current.cancel();
-      if (listeningTimeoutRef.current) {
-        clearTimeout(listeningTimeoutRef.current);
+
+      if (finalText.trim()) {
+        setQuestion(prev => (prev + " " + finalText.trim()).trim());
+        
+        // ✅ NEW - Auto-send after 2 seconds of silence
+        if (listeningTimeoutRef.current) {
+          clearTimeout(listeningTimeoutRef.current);
+        }
+        
+        listeningTimeoutRef.current = setTimeout(() => {
+          const currentQuestion = finalText.trim();
+          if (currentQuestion) {
+            // Trigger form submission
+            const form = document.querySelector('.chat-input-form');
+            if (form) {
+              form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+          }
+        }, 2000); // Wait 2 seconds after speaking stops
       }
     };
-  }, []);
+    
+
+    recognitionRef.current.onerror = (event) => {  // ✅ NEW - logs error
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+      setAvatarExpression("neutral");
+    };
+
+    recognitionRef.current.onend = () => {  // ✅ NEW - simple stop
+      setIsListening(false);
+      setAvatarExpression("neutral");
+    };
+  }
+
+  return () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    synthRef.current.cancel();
+    if (listeningTimeoutRef.current) {
+      clearTimeout(listeningTimeoutRef.current);
+    }
+  };
+}, []);
 
   // Animate mouth based on speech
  
   const startListening = () => {
-    if (recognitionRef.current && !isListening) {
+  if (recognitionRef.current && !isListening) {
+    try {  // ✅ NEW - error handling
       recognitionRef.current.start();
-      if (listeningTimeoutRef.current) {
-        clearTimeout(listeningTimeoutRef.current);
-      }
-      listeningTimeoutRef.current = setTimeout(() => {
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-        }
-      }, 10000);
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+      console.log("Started listening");  // ✅ NEW - debug log
+    } catch (error) {
+      console.error("Error starting recognition:", error);
       setIsListening(false);
-      if (listeningTimeoutRef.current) {
-        clearTimeout(listeningTimeoutRef.current);
-      }
+      setAvatarExpression("neutral");
     }
-  };
+  }
+};
+
+const stopListening = () => {
+  if (recognitionRef.current) {  // ✅ NEW - removed isListening check
+    try {  // ✅ NEW - error handling
+      recognitionRef.current.stop();
+      console.log("Stopped listening");  // ✅ NEW - debug log
+    } catch (error) {
+      console.error("Error stopping recognition:", error);
+    }
+    setIsListening(false);
+    setAvatarExpression("neutral");
+    if (listeningTimeoutRef.current) {
+      clearTimeout(listeningTimeoutRef.current);
+    }
+  }
+};
   const cleanTextForSpeech = (text) => {
   if (!text) return "";
 
@@ -584,18 +598,44 @@ function App() {
       setIsSpeaking(false);
       setAvatarExpression("happy");
       setMouthOpen(0);
-      setTimeout(() => setAvatarExpression("neutral"), 1500);
+      
+      setTimeout(() => {
+        setAvatarExpression("neutral");
+        
+        // ✅ NEW - Restart listening after speaking
+        setTimeout(() => {
+          if (!isListening && recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+              console.log("Auto-restarted listening after speaking");
+            } catch (error) {
+              console.error("Failed to restart listening:", error);
+            }
+          }
+        }, 500); // Wait 0.5s before starting to listen again
+        
+      }, 1500);
     };
 
     utterance.onerror = () => {
       setIsSpeaking(false);
       setAvatarExpression("neutral");
       setMouthOpen(0);
+      
+      // ✅ NEW - Restart listening even on error
+      setTimeout(() => {
+        if (!isListening && recognitionRef.current) {
+          try {
+            recognitionRef.current.start();
+          } catch (error) {
+            console.error("Failed to restart listening:", error);
+          }
+        }
+      }, 500);
     };
 
     synthRef.current.speak(utterance);
   };
-
   const stopSpeaking = () => {
     synthRef.current.cancel();
     setIsSpeaking(false);
@@ -604,75 +644,98 @@ function App() {
   };
 
   const sendQuestion = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    stopListening();
-    const trimmedQuestion = question.trim();
-    if (!trimmedQuestion) return;
+  // Clear any pending auto-send timeout
+  if (listeningTimeoutRef.current) {
+    clearTimeout(listeningTimeoutRef.current);
+  }
 
-    const userMessage = { sender: "user", text: trimmedQuestion };
-    setMessages((prev) => [...prev, userMessage]);
-    setQuestion("");
-    setLoading(true);
-    setAvatarExpression("thinking");
-    stopSpeaking();
+  const trimmedQuestion = question.trim();
+  if (!trimmedQuestion) return;
 
-    abortControllerRef.current = new AbortController();
-
+  // ✅ Stop listening while processing
+  if (recognitionRef.current && isListening) {
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:5000/ask",
-        { question: trimmedQuestion },
-        {
-          timeout: 60000,
-          headers: {
-            "Content-Type": "application/json",
-          },
-          signal: abortControllerRef.current.signal,
-        }
-      );
-
-      const answer = response.data.answer || "No response received.";
-      const botMessage = { sender: "bot", text: answer };
-      setMessages((prev) => [...prev, botMessage]);
-
-      setLoading(false);
-      setAvatarExpression("talking");
-      speakText(answer);
-
-      if (activeTab === "profile") {
-        fetchProfile();
-      }
+      recognitionRef.current.stop();
     } catch (error) {
-      if (axios.isCancel(error)) {
-        console.log("Request cancelled");
-        return;
-      }
-
-      let errorMessage = "Unable to connect to tutor.";
-
-      if (error.response) {
-        errorMessage =
-          error.response.data?.error ||
-          `Server error: ${error.response.status}`;
-      } else if (error.request) {
-        errorMessage =
-          "No response from server. Make sure Flask backend is running on port 5000.";
-      } else {
-        errorMessage = error.message;
-      }
-
-      const errorBotMessage = {
-        sender: "bot",
-        text: `❌ Error: ${errorMessage}`,
-      };
-
-      setMessages((prev) => [...prev, errorBotMessage]);
-      setAvatarExpression("sad");
-      setLoading(false);
+      console.error("Error stopping recognition:", error);
     }
-  };
+  }
 
+  const userMessage = { sender: "user", text: trimmedQuestion };
+  setMessages((prev) => [...prev, userMessage]);
+  setQuestion("");
+  setLoading(true);
+  setAvatarExpression("thinking");
+  stopSpeaking();
+
+  abortControllerRef.current = new AbortController();
+
+  try {
+    const response = await axios.post(
+      "http://127.0.0.1:5000/ask",
+      { question: trimmedQuestion },
+      {
+        timeout: 60000,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        signal: abortControllerRef.current.signal,
+      }
+    );
+
+    const answer = response.data.answer || "No response received.";
+    const botMessage = { sender: "bot", text: answer };
+    setMessages((prev) => [...prev, botMessage]);
+
+    setLoading(false);
+    setAvatarExpression("talking");
+    speakText(answer); // ✅ This will auto-restart listening when done
+
+    if (activeTab === "profile") {
+      fetchProfile();
+    }
+  } catch (error) {
+    if (axios.isCancel(error)) {
+      console.log("Request cancelled");
+      return;
+    }
+
+    let errorMessage = "Unable to connect to tutor.";
+
+    if (error.response) {
+      errorMessage =
+        error.response.data?.error ||
+        `Server error: ${error.response.status}`;
+    } else if (error.request) {
+      errorMessage =
+        "No response from server. Make sure Flask backend is running on port 5000.";
+    } else {
+      errorMessage = error.message;
+    }
+
+    const errorBotMessage = {
+      sender: "bot",
+      text: `❌ Error: ${errorMessage}`,
+    };
+
+    setMessages((prev) => [...prev, errorBotMessage]);
+    setAvatarExpression("sad");
+    setLoading(false);
+    
+    // ✅ NEW - Restart listening even after error
+    setTimeout(() => {
+      if (!isListening && recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (error) {
+          console.error("Failed to restart listening:", error);
+        }
+      }
+    }, 2000);
+  }
+};
   const fetchProfile = async () => {
     try {
       const res = await axios.get("http://127.0.0.1:5000/student-profile");
